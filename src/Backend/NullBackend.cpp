@@ -79,7 +79,7 @@ public:
 
     u32 CreateTexture(const TextureDesc& desc, const void*) override {
         if (desc.width == 0 || desc.height == 0) return 0;
-        textures_ += desc.width > 0 ? 1u : 0u;
+        ++textures_;
         return nextTextureId_++;
     }
 
