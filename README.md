@@ -214,9 +214,6 @@ near-black-with-a-lime-accent look of the reference is a data change
 
 MIT. See [LICENSE](LICENSE).
 
-`third_party/stb/stb_truetype.h` is vendored unmodified and is dual licensed by
-its author as public domain or MIT.
-
 ---
 
 ## Status
