@@ -35,8 +35,6 @@ enum class CmdFlags : u8 {
     None = 0,
     /// Texture is the built-in white 1x1 (shapes, not glyphs/images).
     WhiteTexture = 1u << 0,
-    /// Texture is the font atlas. The shader may skip the RGB multiply.
-    FontAtlas = 1u << 1,
 };
 
 /// One merged batch of quads.
@@ -173,15 +171,12 @@ public:
     // -- Accessors ---------------------------------------------------------
     const Vertex* Vertices() const { return vertices_.data(); }
     u32 VertexCount() const { return static_cast<u32>(vertices_.size()); }
-    size_t VertexCapacity() const { return vertices_.size(); }
 
     const u32* Indices() const { return indices_.data(); }
     u32 IndexCount() const { return static_cast<u32>(indices_.size()); }
-    size_t IndexCapacity() const { return indices_.size(); }
 
     const DrawCmd* Cmds() const { return cmds_.data(); }
     u32 CmdCount() const { return static_cast<u32>(cmds_.size()); }
-    size_t CmdCapacity() const { return cmds_.size(); }
 
     const Rect& ClipRegion(u32 index) const { return clips_[index]; }
     u32 ClipRegionCount() const { return static_cast<u32>(clips_.size()); }
@@ -194,8 +189,9 @@ public:
         return vertices_.size() * sizeof(Vertex) + indices_.size() * sizeof(u32);
     }
 
-    /// Merge trailing batches that share state with each other.
-    /// Called once by the Context before submission.
+    /// Fills in Stats and drops a trailing batch that carries no geometry.
+    /// Called once by Context before submission. Merging happens during
+    /// emission in OpenBatch, not here.
     void Finalize();
 
 private:

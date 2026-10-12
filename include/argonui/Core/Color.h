@@ -24,7 +24,8 @@ struct Color {
             static_cast<f32>(rgba & 0xFFu) / 255.0f * alphaScale);
     }
 
-    /// 0xAABBGGRR source form -> normalised RGBA.
+    /// 0xAABBGGRR source form -> normalised RGBA. For written constants only;
+    /// this is not the byte order the vertex stream uses.
     static constexpr Color FromABGR(u32 abgr, f32 alphaScale = 1.0f) {
         return Color(
             static_cast<f32>(abgr & 0xFFu) / 255.0f,
@@ -33,7 +34,8 @@ struct Color {
             static_cast<f32>((abgr >> 24) & 0xFFu) / 255.0f * alphaScale);
     }
 
-    /// Normalised RGBA -> 0xAABBGGRR.
+    /// Normalised RGBA -> packed u32, red in the low byte. Byte-identical to
+    /// ToVertex; this spelling exists so written constants read naturally.
     u32 ToU32() const {
         auto q = [](f32 v) -> u32 {
             const f32 c = Clamp01(v);

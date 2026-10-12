@@ -2393,8 +2393,8 @@ void VulkanBackend::Render(const DrawList& list, const FrameState&) {
 
     // Upload. The DrawList owns the arrays for the whole frame, so a plain
     // memcpy into the persistently mapped pair is all the "upload" is.
-    const size_t vertexBytes = list.VertexCapacity() * sizeof(Vertex);
-    const size_t indexBytes = list.IndexCapacity() * sizeof(u32);
+    const size_t vertexBytes = list.VertexCount() * sizeof(Vertex);
+    const size_t indexBytes = list.IndexCount() * sizeof(u32);
     if (list.CmdCount() > 0) {
         if (!EnsureBufferCapacity(vertexBytes, indexBytes)) return;
         if (vertexBytes > 0 && vertexMapped_ != nullptr) {

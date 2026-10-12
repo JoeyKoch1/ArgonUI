@@ -1336,9 +1336,9 @@ void GLBackend::Render(const DrawList& list, const FrameState&) {
     if (!api.loaded || targetWidth_ == 0 || targetHeight_ == 0) return;
     if (list.CmdCount() == 0) return;
 
-    const size_t vertexBytes = list.VertexCapacity() * sizeof(Vertex);
-    const size_t indexBytes = list.IndexCapacity() * sizeof(u32);
-    if (!EnsureVertexCapacity(list.VertexCapacity(), list.IndexCapacity())) return;
+    const size_t vertexBytes = list.VertexCount() * sizeof(Vertex);
+    const size_t indexBytes = list.IndexCount() * sizeof(u32);
+    if (!EnsureVertexCapacity(list.VertexCount(), list.IndexCount())) return;
 
     // -- Upload ------------------------------------------------------------
     // Both buffers are bound inside our VAO, so nothing here touches the

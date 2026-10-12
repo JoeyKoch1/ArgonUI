@@ -1322,13 +1322,13 @@ void D3D12Backend::Render(const DrawList& list, const FrameState&) {
     const UINT currentIndex = swapChain_->GetCurrentBackBufferIndex();
 
     // -- Upload ------------------------------------------------------------
-    if (!EnsureVertexCapacity(list.VertexCapacity(), list.IndexCapacity())) return;
+    if (!EnsureVertexCapacity(list.VertexCount(), list.IndexCount())) return;
 
     // Upload the whole arrays, exactly as the D3D11 backend does, and record
     // how many bytes actually went in: the copy below and the draw bounds check
     // both key off these.
-    vertexBytesUploaded_ = static_cast<u64>(list.VertexCapacity()) * sizeof(Vertex);
-    indexBytesUploaded_ = static_cast<u64>(list.IndexCapacity()) * sizeof(u32);
+    vertexBytesUploaded_ = static_cast<u64>(list.VertexCount()) * sizeof(Vertex);
+    indexBytesUploaded_ = static_cast<u64>(list.IndexCount()) * sizeof(u32);
     indexCountUploaded_ = list.IndexCount();
     if (vertexBytesUploaded_ == 0 || indexBytesUploaded_ == 0) return;
 

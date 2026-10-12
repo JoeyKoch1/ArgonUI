@@ -45,9 +45,9 @@ struct Rect {
     constexpr Rect Expand(f32 amount) const { return {min.x - amount, min.y - amount, max.x + amount, max.y + amount}; }
     /// Shrink (positive) / grow (negative) on all sides.
     constexpr Rect Shrink(f32 amount) const { return Expand(-amount); }
-    /// Shrink only the left/top by (all, y).
+    /// Resize from the min corner: min moves by `d`, max is unchanged.
     constexpr Rect OffsetMin(const Vec2& d) const { return {min.x + d.x, min.y + d.y, max.x, max.y}; }
-    /// Shrink only the right/bottom by (all, y).
+    /// Resize from the max corner: max moves by `-d`, min is unchanged.
     constexpr Rect OffsetMax(const Vec2& d) const { return {min.x, min.y, max.x - d.x, max.y - d.y}; }
     constexpr Rect Translate(const Vec2& d) const { return {min.x + d.x, min.y + d.y, max.x + d.x, max.y + d.y}; }
 
@@ -65,7 +65,8 @@ struct Rect {
         return min.x < r.max.x && max.x > r.min.x && min.y < r.max.y && max.y > r.min.y;
     }
 
-    constexpr Rect Intersect(const Rect& r) const {
+    /// Smallest rect containing both. Not an intersection; see IntersectStrict.
+    constexpr Rect Union(const Rect& r) const {
         return {Min(min.x, r.min.x), Min(min.y, r.min.y), Max(max.x, r.max.x), Max(max.y, r.max.y)};
     }
 
@@ -78,9 +79,8 @@ struct Rect {
     constexpr bool operator!=(const Rect& r) const { return !(*this == r); }
 };
 
-/// Intersection that returns an empty rect when the inputs do not overlap.
-/// (Intersect above is intentionally forgiving for layout use - it never
-/// produces an inverted rect - but clipping must use this stricter form.)
+/// True intersection. Returns an empty rect at `min` when the inputs do not
+/// overlap, which is what clipping needs.
 inline Rect IntersectStrict(const Rect& a, const Rect& b) {
     const f32 l = Max(a.min.x, b.min.x);
     const f32 t = Max(a.min.y, b.min.y);
