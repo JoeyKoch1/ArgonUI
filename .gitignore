@@ -1,0 +1,79 @@
+# Local build output
+[Bb]uild/
+[Bb]uild-*/
+[Bb]in/
+[Oo]ut/
+[Oo]bj/
+cmake-build-*/
+
+# CMake internals
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+Testing/
+_deps/
+compile_commands.json
+
+# Object files, libraries and binaries
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
+*.pdb
+*.ilk
+*.exp
+*.manifest
+
+# Compiled shaders. These are generated from shaders/argonui.hlsl or from the
+# GLSL embedded in the backend sources. Check the .spv files in if your target
+# platform needs them checked in; everything else here is regenerated.
+*.spv
+*.spv.hpp
+*.spv.h
+
+# Editor and IDE state
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.aps
+*.ncb
+*.VC.db
+*.VC.opendb
+.cache/
+.clangd/
+compile_flags.txt
+
+# OS cruft
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs and crash dumps
+*.log
+*.dmp
+dumpstack.log
+
+# Local scratch
+scratch/
+tmp/
+*.tmp
+*.bak
+*.orig
+*.rej
+*~

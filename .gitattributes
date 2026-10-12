@@ -1,0 +1,17 @@
+# Normalise line endings in the repository; check out LF on every platform.
+# Source is ASCII throughout, so no encoding negotiation is needed.
+* text=auto eol=lf
+
+*.h    text diff=cpp
+*.cpp  text diff=cpp
+*.hlsl text
+*.md   text
+*.txt  text
+
+# These are generated or binary; never try to diff or merge them.
+*.spv  binary
+*.dll  binary
+*.lib  binary
+*.exe  binary
+*.png  binary
+*.ico  binary
