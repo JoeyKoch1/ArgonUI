@@ -739,9 +739,14 @@ f32 Context::CalcTextHeight(const char* text, Font* font) const {
 }
 
 f32 Context::AddText(const Vec2& pos, const char* text, const Color& color, Font* font) {
+    // Apply the style alpha like the other primitives do. Without this a
+    // PushStyleVar(Alpha, ...) fades the shapes around a label but not the
+    // label itself, which reads as a rendering bug rather than a fade.
+    const Color draw = color.WithAlpha(color.a * Alpha());
+
     if (font == nullptr) font = currentFont_;
     if (font == nullptr || text == nullptr || *text == '\0') return 0.0f;
-    if (color.a <= 0.0f) return 0.0f;
+    if (draw.a <= 0.0f) return 0.0f;
 
     const u32 texId = fonts_.TextureIdOf(font);
     if (texId == 0) {
@@ -769,7 +774,7 @@ f32 Context::AddText(const Vec2& pos, const char* text, const Color& color, Font
                 // a linear filter and a fractional origin would smear it.
                 const f32 gx = std::floor(pen.x + g->bearingX + 0.5f);
                 const f32 gy = pen.y + g->bearingY;
-                drawList_.AddGlyphQuad(Rect(gx, gy, gx + g->width, gy + g->height), g->uv, color);
+                drawList_.AddGlyphQuad(Rect(gx, gy, gx + g->width, gy + g->height), g->uv, draw);
             }
             pen.x += g->advanceX;
         }
