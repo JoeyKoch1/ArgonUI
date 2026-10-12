@@ -210,6 +210,13 @@ near-black-with-a-lime-accent look of the reference is a data change
 * **Overlays.** When the device is not yours, the D3D11 backend saves and
   restores the full device context state so the host's next frame is untouched.
 
+## License
+
+MIT. See [LICENSE](LICENSE).
+
+`third_party/stb/stb_truetype.h` is vendored unmodified and is dual licensed by
+its author as public domain or MIT.
+
 ---
 
 ## Status
