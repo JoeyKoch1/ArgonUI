@@ -12,12 +12,8 @@
 #include <utility>
 
 namespace argon::ui {
-
 namespace {
-
-// ---------------------------------------------------------------------------
 // File IO (portable, no platform SDK pulled in)
-// ---------------------------------------------------------------------------
 bool ReadFile(const char* path, std::vector<u8>& out) {
     std::FILE* f = std::fopen(path, "rb");
     if (f == nullptr) return false;
@@ -96,9 +92,7 @@ bool FindAndLoad(const char* const* candidates, const char* fontDir,
     return false;
 }
 
-// ---------------------------------------------------------------------------
 // UTF-8
-// ---------------------------------------------------------------------------
 constexpr u32 kReplacementChar = 0xFFFDu;
 
 } // namespace
@@ -162,9 +156,7 @@ size_t EncodeUtf8(u32 cp, char* out) {
     return 4;
 }
 
-// ---------------------------------------------------------------------------
 // Font::Impl
-// ---------------------------------------------------------------------------
 
 struct Font::Impl {
     std::vector<u8> ttf;
@@ -174,9 +166,7 @@ struct Font::Impl {
     bool infoValid = false;
 };
 
-// ---------------------------------------------------------------------------
 // Font
-// ---------------------------------------------------------------------------
 
 Font::Font() : impl_(std::make_unique<Impl>()) { ResetAtlas(); }
 
@@ -285,9 +275,7 @@ bool Font::LoadSystemDefault(Font& out, const FontDesc& desc, const char* family
     return false;
 }
 
-// ---------------------------------------------------------------------------
 // Glyph baking
-// ---------------------------------------------------------------------------
 
 const Glyph* Font::GetFallbackGlyph() {
     auto it = glyphs_.find(fallbackCodepoint_);
@@ -447,9 +435,7 @@ f32 Font::Kerning(u32 first, u32 second) const {
     return static_cast<f32>(stbtt_GetGlyphKernAdvance(&impl_->info, g0, g1)) * impl_->scale;
 }
 
-// ---------------------------------------------------------------------------
 // Measurement
-// ---------------------------------------------------------------------------
 
 f32 Font::MeasureLine(const char* text, size_t length) const {
     if (!valid_ || text == nullptr || length == 0) return 0.0f;
@@ -579,9 +565,7 @@ size_t Font::WrapText(const char* text, size_t length, f32 maxWidth,
     return static_cast<size_t>(lines.size());
 }
 
-// ---------------------------------------------------------------------------
 // FontManager
-// ---------------------------------------------------------------------------
 
 FontManager::FontManager() = default;
 FontManager::~FontManager() = default;

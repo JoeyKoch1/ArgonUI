@@ -28,7 +28,6 @@
 #include "Theme/Theme.h"
 
 namespace argon::ui {
-
 enum class ItemFlags : u32 {
     None = 0,
     /// Don't register hover/active for this item (decorative geometry).
@@ -461,5 +460,6 @@ public:
 
     /// True while any popup was open at the start of this frame.
     bool PopupWasOpen() const { return hasPopupCapture_; }
+};
 
 } // namespace argon::ui

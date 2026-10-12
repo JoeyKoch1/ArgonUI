@@ -11,9 +11,7 @@
 #include "argonui/Widgets/Widgets.h"
 
 namespace argon::ui {
-
 namespace {
-
 /// Clamps a byte offset into the string onto a UTF-8 boundary.
 size_t CaretClamp(const std::string& s, u32 offset) {
     size_t i = std::min<size_t>(offset, s.size());
@@ -55,9 +53,7 @@ Rect PlacePopup(const Rect& anchor, f32 w, f32 h, Vec2 display, f32 gap = 4.0f) 
 
 } // namespace
 
-// ===========================================================================
 // Segmented control
-// ===========================================================================
 
 int SegmentedControl(const char* id, const char* const* options, int count, int* selected,
                      f32 itemWidth) {
@@ -120,9 +116,7 @@ int SegmentedControl(const char* id, const char* const* options, int count, int*
     return 0;
 }
 
-// ===========================================================================
 // Combo
-// ===========================================================================
 
 int PopupList(Context& ctx, const char* id, const Rect& anchor, const char* const* labels,
               int count, int* selected, f32 width, bool* open, const Icon* icons) {
@@ -274,12 +268,9 @@ int Combo(const char* id, const char* const* options, int count, int* selected, 
     return pick;
 }
 
-// ===========================================================================
 // Text fields
-// ===========================================================================
 
 namespace {
-
 /// Shared caret/selection-free single-line editor.
 /// Returns true when the text changed.
 bool TextFieldImpl(Context& ctx, const char* id, std::string& value, const char* placeholder,
@@ -513,9 +504,7 @@ void TextBlock(Context& ctx, const char* text, const Color& color, f32 fontSize)
     ctx.NewLine();
 }
 
-// ===========================================================================
 // Tooltip queue
-// ===========================================================================
 
 namespace {
 struct TooltipRequest {

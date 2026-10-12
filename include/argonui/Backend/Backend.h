@@ -39,10 +39,7 @@
 #include "../Draw/DrawList.h"
 
 namespace argon::ui {
-
-// ---------------------------------------------------------------------------
 // Enumerations
-// ---------------------------------------------------------------------------
 
 enum class GraphicsApi : u8 {
     None = 0,
@@ -88,9 +85,7 @@ enum class TextureFormat : u8 {
     BGRA8,
 };
 
-// ---------------------------------------------------------------------------
 // Descriptor structs
-// ---------------------------------------------------------------------------
 
 struct DeviceDesc {
     GraphicsApi api = GraphicsApi::None;
@@ -185,9 +180,7 @@ struct BackendInfo {
     bool supportsPremultipliedBlending = true;
 };
 
-// ---------------------------------------------------------------------------
 // The interface
-// ---------------------------------------------------------------------------
 
 class IArgonBackend {
 public:

@@ -32,8 +32,6 @@
 #include "Context.h"
 
 namespace argon::ui {
-
-// ---------------------------------------------------------------------------
 // Minimal integration sketch (see examples/demo for the full version):
 //
 //   argon::ui::Context ctx;
@@ -51,6 +49,5 @@ namespace argon::ui {
 //   argon::ui::RenderTooltips(ctx);
 //   ctx.EndLayout();
 //   ctx.Render();            // uploads and presents
-// ---------------------------------------------------------------------------
 
 } // namespace argon::ui

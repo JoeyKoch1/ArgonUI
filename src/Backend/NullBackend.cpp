@@ -14,9 +14,7 @@
 #include "argonui/Core/Log.h"
 
 namespace argon::ui {
-
 namespace {
-
 class NullBackend final : public IArgonBackend {
 public:
     bool Initialize(const DeviceDesc&) override {

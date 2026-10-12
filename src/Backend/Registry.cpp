@@ -7,7 +7,6 @@
 #include "argonui/Core/Log.h"
 
 namespace argon::ui {
-
 #if defined(ARGON_WITH_D3D11)
 IArgonBackend* CreateD3D11Backend();
 #endif

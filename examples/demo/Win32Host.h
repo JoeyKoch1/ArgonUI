@@ -17,7 +17,6 @@
 #include "argonui/ArgonUI.h"
 
 namespace argonhost {
-
 class Win32Host {
 public:
     Win32Host() = default;

@@ -12,7 +12,6 @@
 #include "../Text/Font.h"
 
 namespace argon::ui {
-
 /// Interaction-aware colour set. Widgets pick the entry matching their state.
 struct StateColors {
     Color normal;

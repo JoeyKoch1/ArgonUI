@@ -21,7 +21,6 @@
 #include "Vertex.h"
 
 namespace argon::ui {
-
 enum class BlendMode : u8 {
     /// Premultiplied source alpha: (ONE, ONE_MINUS_SRC_ALPHA).
     /// Everything ArgonUI draws uses this by default.

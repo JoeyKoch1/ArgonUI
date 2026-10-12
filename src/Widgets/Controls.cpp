@@ -5,10 +5,7 @@
 #include <cstring>
 
 namespace argon::ui {
-
-// ===========================================================================
 // Shared helpers
-// ===========================================================================
 
 enum class TextAlign { Left, Center, Right };
 
@@ -43,9 +40,7 @@ static Color ResolveInteractive(const Color& normal, const Color& hovered, const
     return Color::LerpC(c, active, press);
 }
 
-// ===========================================================================
 // Button
-// ===========================================================================
 
 ButtonColors ResolveButton(ButtonKind kind, const Style& style) {
     ButtonColors c{};
@@ -235,9 +230,7 @@ bool IconButton(Icon icon, const char* tooltip, ButtonKind kind, f32 size, bool 
     return r.clicked && enabled;
 }
 
-// ===========================================================================
 // Checkbox
-// ===========================================================================
 
 bool Checkbox(const char* label, bool* value, bool enabled) {
     Context& ctx = Context::Get();
@@ -305,9 +298,7 @@ bool Checkbox(const char* label, bool* value, bool enabled) {
     return r.clicked && enabled;
 }
 
-// ===========================================================================
 // Toggle switch (the pill in the reference UI)
-// ===========================================================================
 
 bool ToggleSwitch(bool* value, bool enabled, f32 widthIn, f32 heightIn) {
     Context& ctx = Context::Get();
@@ -361,12 +352,9 @@ bool ToggleSwitch(bool* value, bool enabled, f32 widthIn, f32 heightIn) {
     return r.clicked && enabled;
 }
 
-// ===========================================================================
 // Slider
-// ===========================================================================
 
 namespace {
-
 /// Shared implementation. `vertical` picks the axis.
 bool SliderImpl(const char* label, f32* value, f32 vmin, f32 vmax, const char* fmt,
                 bool vertical, f32 fixedHeight, bool enabled) {

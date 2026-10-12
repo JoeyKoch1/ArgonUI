@@ -1,7 +1,6 @@
 #include "argonui/Theme/Theme.h"
 
 namespace argon::ui {
-
 void Theme::InitVariants() {
     // Primary: solid accent, dark text. The "Save" / "Equip" buttons.
     primaryButton.bgNormal = colors.accent;

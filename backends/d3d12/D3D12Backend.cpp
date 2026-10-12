@@ -15,9 +15,7 @@
 #include "backends/common/ArgonHLSL.h"
 
 namespace argon::ui {
-
 namespace {
-
 constexpr const char* kTag = "D3D12";
 
 /// The shader in backends/common/ArgonHLSL.h declares `Texture2D gTexture;` and
@@ -99,8 +97,6 @@ void EnableDebugLayer() {
 
 } // namespace
 
-// ---------------------------------------------------------------------------
-
 D3D12Backend::D3D12Backend() = default;
 D3D12Backend::~D3D12Backend() { Shutdown(); }
 
@@ -118,9 +114,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE D3D12Backend::RenderTargetHandle() const {
     return backBufferRtv_[0];
 }
 
-// ---------------------------------------------------------------------------
 // Device
-// ---------------------------------------------------------------------------
 
 bool D3D12Backend::Initialize(const DeviceDesc& desc) {
     info_.api = GraphicsApi::D3D12;
@@ -300,9 +294,7 @@ void D3D12Backend::Shutdown() {
     lastError_.clear();
 }
 
-// ---------------------------------------------------------------------------
 // Shaders / root signature / heaps
-// ---------------------------------------------------------------------------
 
 bool D3D12Backend::CompileShaders() {
     const std::string source = std::string(kArgonD3D12Prefix) + kArgonHlslSource;
@@ -588,9 +580,7 @@ bool D3D12Backend::CreateStaticResources() {
     return true;
 }
 
-// ---------------------------------------------------------------------------
 // Target
-// ---------------------------------------------------------------------------
 
 bool D3D12Backend::CreateSwapchainForWindow(u32 width, u32 height) {
     ComPtr<IDXGIFactory4> factory;
@@ -949,9 +939,7 @@ void D3D12Backend::DestroyTarget() {
     targetSize_ = Vec2(0.0f, 0.0f);
 }
 
-// ---------------------------------------------------------------------------
 // Textures
-// ---------------------------------------------------------------------------
 
 D3D12_CPU_DESCRIPTOR_HANDLE D3D12Backend::SrvHandle(u32 handle) const {
     UINT slot = 0;  // the built-in white 1x1
@@ -1188,9 +1176,7 @@ void D3D12Backend::DestroyTexture(u32 handle) {
     textures_.erase(it);
 }
 
-// ---------------------------------------------------------------------------
 // Frame
-// ---------------------------------------------------------------------------
 
 bool D3D12Backend::WaitForFence(FrameSlot& slot) {
     if (slot.fence == nullptr) return true;
@@ -1508,8 +1494,6 @@ void D3D12Backend::EndFrame() {
     frameBegun_ = false;
     workSubmitted_ = false;
 }
-
-// ---------------------------------------------------------------------------
 
 IArgonBackend* CreateD3D12Backend() { return new D3D12Backend(); }
 

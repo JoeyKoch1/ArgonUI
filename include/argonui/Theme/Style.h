@@ -13,7 +13,6 @@
 #include "Theme.h"
 
 namespace argon::ui {
-
 enum class StyleColorId : int {
     Text = 0,
     TextDim,

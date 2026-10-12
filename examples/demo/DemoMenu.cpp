@@ -10,14 +10,10 @@
 using namespace argon::ui;
 
 namespace argondemo {
-
 namespace {
-
-// ---------------------------------------------------------------------------
 // Small "draw this into the right-hand slot of a Row" adapters.
 // A Row hands the control a rect; these place a widget inside it and report
 // whether it changed.
-// ---------------------------------------------------------------------------
 
 struct BoolRef {
     bool* v;
@@ -108,10 +104,8 @@ bool DrawFooter(Context& ctx, const Rect& r, void* ud) {
     return any;
 }
 
-// ---------------------------------------------------------------------------
 // Static demo state that lives outside MenuState because the reference UI
 // treats these as part of the "skin" being edited.
-// ---------------------------------------------------------------------------
 struct SkinState {
     f32 wear = 0.62f;
     f32 seed = 267.0f;
@@ -126,9 +120,7 @@ struct SkinState {
     bool sections[4] = {true, true, true, false};
 };
 
-// ---------------------------------------------------------------------------
 // Tabs
-// ---------------------------------------------------------------------------
 
 const char* const kTabs[] = {"Visuals", "Enemy", "Local", "World", "Ambience"};
 constexpr int kTabCount = 5;
@@ -138,7 +130,7 @@ void DrawVisualsTab(Context& ctx, MenuState& s, SkinState& k) {
 
     // ---- Player -------------------------------------------------------
     BeginSection(ctx, "Player", &k.sections[0], nullptr, Icon::User);
-    RowSwitch(ctx, "Enabled", &s.espEnabled);
+    RowToggle(ctx, "Enabled", &s.espEnabled);
 
     {
         BoolRef ref{&s.outOfScreenArrows};
@@ -177,9 +169,9 @@ void DrawVisualsTab(Context& ctx, MenuState& s, SkinState& k) {
 
     // ---- Model --------------------------------------------------------
     BeginSection(ctx, "Model", &k.sections[1], nullptr, Icon::Cube);
-    RowSwitch(ctx, "Chams", &s.wallChams, Icon::Layers);
-    RowSwitch(ctx, "Hit chams", &s.tracers, Icon::Target);
-    RowSwitch(ctx, "Ragdoll chams", &s.glow, Icon::Cube);
+    RowToggle(ctx, "Chams", &s.wallChams, Icon::Layers);
+    RowToggle(ctx, "Hit chams", &s.tracers, Icon::Target);
+    RowToggle(ctx, "Ragdoll chams", &s.glow, Icon::Cube);
 
     {
         BoolRef ref{&s.glow};
@@ -308,8 +300,6 @@ void DrawGallery(Context& ctx) {
 }
 
 } // namespace
-
-// ---------------------------------------------------------------------------
 
 void DrawMenu(Context& ctx, MenuState& s) {
     static SkinState k;

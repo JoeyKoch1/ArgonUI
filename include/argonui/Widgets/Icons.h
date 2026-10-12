@@ -16,7 +16,6 @@
 #include "../Draw/DrawList.h"
 
 namespace argon::ui {
-
 enum class Icon : u16 {
     None = 0,
 

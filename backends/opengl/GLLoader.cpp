@@ -7,9 +7,7 @@
 #include <mutex>
 
 namespace argon::ui::gl {
-
 namespace {
-
 Api g_api;
 std::mutex g_mutex;
 
@@ -182,8 +180,6 @@ bool LoadLocked(std::string* err) {
 }
 
 } // namespace
-
-// ---------------------------------------------------------------------------
 
 bool Load(std::string* err) {
     std::lock_guard<std::mutex> lock(g_mutex);

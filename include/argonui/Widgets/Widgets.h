@@ -8,10 +8,7 @@
 #include "Internal.h"
 
 namespace argon::ui {
-
-// ===========================================================================
 // Containers
-// ===========================================================================
 
 /// A collapsible card with a header bar, exactly like the reference sections.
 /// Returns the new open state; pair with EndSection. Always draw the body -
@@ -77,9 +74,7 @@ bool Row(Context& ctx, const char* label, const RowOptions& options,
 void InfoRow(Context& ctx, const char* label, const char* value, Color dotColor = Color(0, 0, 0, 0),
              Icon icon = Icon::None);
 
-// ===========================================================================
 // Pickers / inputs
-// ===========================================================================
 
 /// Single-line editable text. Returns true when the value changed.
 bool TextField(Context& ctx, const char* id, char* buffer, size_t bufferSize,
@@ -103,9 +98,7 @@ bool SearchField(Context& ctx, const char* id, std::string& query,
 void TextBlock(Context& ctx, const char* text, const Color& color = Color(0, 0, 0, 0),
                f32 fontSize = 0.0f);
 
-// ===========================================================================
 // Overlays
-// ===========================================================================
 
 /// Modal dialog. Returns true when it is open this frame; the caller draws the
 /// body between Begin/End. The backdrop dims everything and swallows input.
@@ -127,7 +120,7 @@ int ContextMenu(Context& ctx, const char* id, const char* const* labels, int cou
 
 /// Simple dropdown list used by Combo and ContextMenu internally, and
 /// available on its own.
-int PopupList(Context& ctx, const char* id, const Vec2& anchor, const char* const* labels,
+int PopupList(Context& ctx, const char* id, const Rect& anchor, const char* const* labels,
               int count, int* selected, f32 width = 0.0f, bool* open = nullptr,
               const Icon* icons = nullptr);
 

@@ -3,7 +3,6 @@
 #include <cstdio>
 
 namespace argon::ui {
-
 namespace {
 const char* LevelTag(LogLevel l) {
     switch (l) {

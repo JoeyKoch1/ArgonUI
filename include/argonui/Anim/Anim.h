@@ -8,10 +8,7 @@
 #include "../Core/Types.h"
 
 namespace argon::ui {
-
-// ---------------------------------------------------------------------------
 // Easing
-// ---------------------------------------------------------------------------
 
 inline f32 EaseLinear(f32 t) { return t; }
 
@@ -68,9 +65,7 @@ inline f32 EaseBounceOut(f32 t) {
 
 using EasingFn = f32 (*)(f32);
 
-// ---------------------------------------------------------------------------
 // Animation records
-// ---------------------------------------------------------------------------
 
 /// A scalar that chases a target every frame, either exponentially (rate) or
 /// over a fixed duration with an easing curve. Whichever is used, the value is

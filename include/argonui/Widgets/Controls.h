@@ -15,7 +15,6 @@
 #include "Icons.h"
 
 namespace argon::ui {
-
 enum class ButtonKind {
     Primary = 0,   ///< Solid accent, dark text. "Save", "Equip".
     Secondary,     ///< Raised surface + hairline border. "Default".
@@ -93,9 +92,7 @@ int Combo(const char* id, const char* const* options, int count, int* selected, 
 /// Path-style breadcrumbs: "C: > Users > puzo > Downloads".
 void Breadcrumbs(const char* const* items, int count, int* hoveredIndex = nullptr);
 
-// ---------------------------------------------------------------------------
 // Tooltip support (implemented in Overlays.cpp)
-// ---------------------------------------------------------------------------
 
 /// Queues a tooltip anchored to `anchor` for this frame. Safe to call from any
 /// widget; the tooltip itself is drawn last so it floats above everything.
@@ -104,12 +101,10 @@ void ShowTooltip(const char* text, const Rect& anchor);
 /// Clears the queue. Called by Context::NewFrame.
 void ClearTooltips();
 
-// ---------------------------------------------------------------------------
 // Row - the workhorse of the reference UI.
 // A label on the left, a control on the right, hairline separators between
 // rows, and an optional "..." overflow button. Widgets are passed as a callable
 // so the control keeps full control of its own interaction.
-// ---------------------------------------------------------------------------
 
 struct RowOptions {
     /// Optional "..." button between label and control.

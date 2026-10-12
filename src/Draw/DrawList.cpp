@@ -3,7 +3,6 @@
 #include <algorithm>
 
 namespace argon::ui {
-
 namespace {
 /// Effectively infinite scissor rect. Backends clamp it against the
 /// framebuffer, so the CPU side never has to know the display size.
@@ -15,9 +14,7 @@ inline u32 PackColor(const Color& c) { return c.ToVertex(); }
 
 } // namespace
 
-// ---------------------------------------------------------------------------
 // Lifetime
-// ---------------------------------------------------------------------------
 
 DrawList::DrawList() {
     clip_ = FullClip();
@@ -50,9 +47,7 @@ void DrawList::Reserve(size_t vertexCapacity, size_t indexCapacity, size_t cmdCa
     clips_.reserve(64);
 }
 
-// ---------------------------------------------------------------------------
 // Clipping
-// ---------------------------------------------------------------------------
 
 u32 DrawList::InternClip(const Rect& r) {
     for (size_t i = 0; i < clips_.size(); ++i) {
@@ -76,9 +71,7 @@ void DrawList::PopClip(const Rect& previousClip) {
     batchOpen_ = false;
 }
 
-// ---------------------------------------------------------------------------
 // Batch state
-// ---------------------------------------------------------------------------
 
 void DrawList::SetTexture(u32 textureId, CmdFlags flags) {
     const u8 f = static_cast<u8>(flags);
@@ -128,9 +121,7 @@ void DrawList::OpenBatch(u32 textureId, u8 flags, BlendMode blend) {
     ++stats_.drawCalls;
 }
 
-// ---------------------------------------------------------------------------
 // Geometry emission
-// ---------------------------------------------------------------------------
 
 Vertex DrawList::MakeCorner(f32 x, f32 y, f32 u, f32 v, const Rect& core,
                             const CornerRadius& r, const Color& fill,
@@ -238,9 +229,7 @@ void DrawList::EmitTriangle(const Vec2& a, const Vec2& b, const Vec2& c,
     ++stats_.quads;
 }
 
-// ---------------------------------------------------------------------------
 // Primitives
-// ---------------------------------------------------------------------------
 
 bool DrawList::IsClipped(const Rect& bounds) const {
     return IntersectStrict(clip_, bounds).Area() <= 0.0f;
@@ -354,8 +343,6 @@ void DrawList::AddGlyphQuad(const Rect& bounds, const Rect& uv, const Color& col
              0.0f, 0.0f, VF_FLAT | VF_TEX_COVERAGE, uv, curTexture_, curFlags_, curBlend_);
 }
 
-// ---------------------------------------------------------------------------
-
 void DrawList::InsertBackgroundBox(const Rect& bounds, const CornerRadius& radiusIn,
                                    const Color& fill, const Color& border, const Color& glow,
                                    f32 borderWidth, f32 glowWidth, u32 checkpoint,
@@ -433,8 +420,6 @@ void DrawList::InsertBackgroundBox(const Rect& bounds, const CornerRadius& radiu
     stats_.quads += 1;
     stats_.drawCalls += 1;
 }
-
-// ---------------------------------------------------------------------------
 
 void DrawList::Finalize() {
     stats_.vertices = static_cast<u32>(vertices_.size());

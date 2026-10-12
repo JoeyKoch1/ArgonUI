@@ -12,7 +12,6 @@
 #include "Backend.h"
 
 namespace argon::ui {
-
 /// Creates a backend instance. Returns nullptr when that backend was not
 /// compiled in. Caller owns the result and must delete it (or pass it to
 /// Context::Shutdown()).

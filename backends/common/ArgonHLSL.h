@@ -6,7 +6,6 @@
 #pragma once
 
 namespace argon::ui {
-
 inline constexpr const char* kArgonHlslSource = R"HLSL(
 // Attribute offsets are dictated by argon::ui::Vertex:
 //   0  pos     vec2  (x, y)

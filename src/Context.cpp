@@ -6,7 +6,6 @@
 #include <cstring>
 
 namespace argon::ui {
-
 namespace {
 thread_local Context* g_currentContext = nullptr;
 
@@ -30,9 +29,7 @@ LayoutEntry MakeLayoutEntry(const Rect& content, f32 spacingX, f32 spacingY) {
 }
 } // namespace
 
-// ---------------------------------------------------------------------------
 // Current instance
-// ---------------------------------------------------------------------------
 
 Context* Context::Current() { return g_currentContext; }
 void Context::SetCurrent(Context* ctx) { g_currentContext = ctx; }
@@ -45,9 +42,7 @@ Context& Context::Get() {
     return orphan;
 }
 
-// ---------------------------------------------------------------------------
 // Lifetime
-// ---------------------------------------------------------------------------
 
 Context::Context() {
     idStack_.reserve(64);
@@ -111,9 +106,7 @@ void Context::SetBackend(IArgonBackend* backend) {
     backend_ = backend;
 }
 
-// ---------------------------------------------------------------------------
 // Frame
-// ---------------------------------------------------------------------------
 
 void Context::NewFrame(const FrameState& state) {
     frame_ = state;
@@ -248,9 +241,7 @@ void Context::UpdateDurations(f32 dt) {
     }
 }
 
-// ---------------------------------------------------------------------------
 // Ids
-// ---------------------------------------------------------------------------
 
 u32 Context::Fnv1a(const char* str, u32 seed) {
     u32 h = seed;
@@ -304,9 +295,7 @@ u32 Context::GetID(int i) const {
     return h == 0u ? 1u : h;
 }
 
-// ---------------------------------------------------------------------------
 // Layout
-// ---------------------------------------------------------------------------
 
 void Context::BeginLayout(const Rect& contentRect) {
     LayoutEntry& parent = layoutStack_.back();
@@ -503,9 +492,7 @@ void Context::Separator() {
     NewLine();
 }
 
-// ---------------------------------------------------------------------------
 // Items
-// ---------------------------------------------------------------------------
 
 u32 Context::PushZ() {
     zStack_.push_back(z_);
@@ -605,9 +592,7 @@ bool Context::WantsCaptureKeyboard() const { return focusId_ != 0; }
 
 void Context::SetKeyboardFocusHere() { wantsFocus_ = true; }
 
-// ---------------------------------------------------------------------------
 // State store
-// ---------------------------------------------------------------------------
 
 WidgetState& Context::State(u32 id) {
     auto it = states_.find(id);
@@ -680,9 +665,7 @@ f32 Context::AnimValue(u32 id) const {
     return it == anims_.end() ? 0.0f : it->second.value;
 }
 
-// ---------------------------------------------------------------------------
 // Clipping
-// ---------------------------------------------------------------------------
 
 void Context::PushClipRect(const Rect& rect) {
     clipStack_.push_back(drawList_.PushClip(rect));
@@ -697,9 +680,7 @@ void Context::PopClipRect() {
     if (!clipStack_.empty()) clipStack_.pop_back();
 }
 
-// ---------------------------------------------------------------------------
 // Style
-// ---------------------------------------------------------------------------
 
 void Context::SetTheme(const Theme& theme) { style_.Reset(theme); }
 
@@ -715,9 +696,7 @@ void Context::PushStyleVar(StyleVarId id, f32 v) { style_.PushVar(id, v); }
 void Context::PopStyleColor(int count) { style_.PopColors(count); }
 void Context::PopStyleVar(int count) { style_.PopVars(count); }
 
-// ---------------------------------------------------------------------------
 // Fonts and text
-// ---------------------------------------------------------------------------
 
 Font* Context::FontAt(f32 pixelSize) { return fonts_.AtSize(pixelSize); }
 Font* Context::SemiboldFontAt(f32 pixelSize) { return fonts_.SemiboldAtSize(pixelSize); }
@@ -880,9 +859,7 @@ void Context::TextWrapped(const char* text) {
     NewLine();
 }
 
-// ---------------------------------------------------------------------------
 // Primitives
-// ---------------------------------------------------------------------------
 
 void Context::AddBox(const Rect& r, const Color& fill, const CornerRadius& radius, f32 borderWidth,
                      const Color& borderColor, f32 glowWidth, const Color& glowColor,
@@ -904,9 +881,7 @@ void Context::AddImage(const Rect& r, u32 textureId, const Color& tint, const Co
     drawList_.AddImage(r, textureId, tint.WithAlpha(tint.a * Alpha()), radius);
 }
 
-// ---------------------------------------------------------------------------
 // Textures
-// ---------------------------------------------------------------------------
 
 u32 Context::RegisterTexture(const TextureDesc& desc, const void* pixels) {
     if (backend_ == nullptr) return 0;
@@ -937,9 +912,7 @@ u32 Context::RegisterTextureFromPixels(u32 width, u32 height, const u8* rgba,
     return RegisterTexture(desc, rgba);
 }
 
-// ---------------------------------------------------------------------------
 // Diagnostics
-// ---------------------------------------------------------------------------
 
 void Context::RenderMetricsOverlay() {
     const DrawStats& s = drawList_.Stats();

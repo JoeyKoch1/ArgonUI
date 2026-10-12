@@ -50,7 +50,6 @@
 #include "backends/opengl/GLLoader.h"
 
 namespace argon::ui {
-
 class GLBackend final : public IArgonBackend {
 public:
     GLBackend();

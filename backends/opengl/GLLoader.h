@@ -35,9 +35,7 @@
 #include <cstddef>
 #include <string>
 
-// ---------------------------------------------------------------------------
 // Enumerants the Windows SDK's <GL/gl.h> does not carry
-// ---------------------------------------------------------------------------
 // opengl32's header stops at GL 1.1 (plus a few ancient EXT aliases), so every
 // token ArgonUI needs from 1.2 onwards is declared here. Each one is guarded:
 // any driver header or future SDK that already provides it wins, and where the
@@ -138,7 +136,6 @@ typedef ptrdiff_t GLintptr;
 #endif
 
 namespace argon::ui::gl {
-
 // The GL scalar types, re-exported so everything below (and the backend) can be
 // spelled gl::GLuint without relying on qualified lookup falling back to the
 // global namespace.
@@ -151,9 +148,7 @@ using GLfloat = ::GLfloat;
 using GLboolean = ::GLboolean;
 using GLchar = ::GLchar;
 
-// ---------------------------------------------------------------------------
 // Signatures
-// ---------------------------------------------------------------------------
 // APIENTRY on every one of these, including the 1.1 set: opengl32.dll exports
 // them __stdcall, and leaving it off would corrupt the stack under x86.
 
@@ -225,9 +220,7 @@ using PfnSamplerParameteri = void (APIENTRY*)(GLuint, GLenum, GLint);
 using PfnBindSampler = void (APIENTRY*)(GLuint, GLuint);
 using PfnDeleteSamplers = void (APIENTRY*)(GLsizei, const GLuint*);
 
-// ---------------------------------------------------------------------------
 // The table
-// ---------------------------------------------------------------------------
 
 struct Api {
     // -- Identification ----------------------------------------------------

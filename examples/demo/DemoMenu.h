@@ -4,7 +4,6 @@
 #include "argonui/ArgonUI.h"
 
 namespace argondemo {
-
 /// All demo state. Kept in one place so the whole menu is data-driven and the
 /// widget code stays readable.
 struct MenuState {

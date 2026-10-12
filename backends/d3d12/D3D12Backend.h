@@ -45,7 +45,6 @@
 #include "argonui/Backend/Backend.h"
 
 namespace argon::ui {
-
 class D3D12Backend final : public IArgonBackend {
 public:
     D3D12Backend();

@@ -38,7 +38,6 @@
 #include "argonui/Backend/Backend.h"
 
 namespace argon::ui {
-
 class VulkanBackend final : public IArgonBackend {
 public:
     VulkanBackend();

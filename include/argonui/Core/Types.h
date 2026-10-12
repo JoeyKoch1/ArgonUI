@@ -8,7 +8,6 @@
 #include <cstdint>
 
 namespace argon::ui {
-
 using u8 = std::uint8_t;
 using u16 = std::uint16_t;
 using u32 = std::uint32_t;
@@ -23,9 +22,7 @@ using f64 = double;
 inline constexpr f32 kPi = 3.14159265358979323846f;
 inline constexpr f32 kEpsilon = 1e-6f;
 
-// ---------------------------------------------------------------------------
 // Vec2
-// ---------------------------------------------------------------------------
 struct Vec2 {
     f32 x = 0.0f;
     f32 y = 0.0f;
@@ -50,9 +47,7 @@ struct Vec2 {
 
 inline constexpr Vec2 operator*(f32 s, const Vec2& v) { return {v.x * s, v.y * s}; }
 
-// ---------------------------------------------------------------------------
 // Vec4
-// ---------------------------------------------------------------------------
 struct Vec4 {
     f32 x = 0.0f, y = 0.0f, z = 0.0f, w = 0.0f;
 
@@ -63,9 +58,7 @@ struct Vec4 {
     constexpr Vec2 xy() const { return {x, y}; }
 };
 
-// ---------------------------------------------------------------------------
 // Scalar helpers
-// ---------------------------------------------------------------------------
 template <typename T>
 inline constexpr T Min(T a, T b) { return a < b ? a : b; }
 template <typename T>

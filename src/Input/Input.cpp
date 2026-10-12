@@ -1,7 +1,6 @@
 #include "argonui/Input/Input.h"
 
 namespace argon::ui {
-
 void InputState::ClearFrameEdges() {
     mouseDelta = Vec2(0.0f, 0.0f);
     mouseWheel = 0.0f;

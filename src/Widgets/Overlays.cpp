@@ -9,9 +9,7 @@
 #include "argonui/Widgets/Widgets.h"
 
 namespace argon::ui {
-
 namespace {
-
 enum class Align { Left, Center, Right };
 
 f32 DrawTextO(Context& ctx, const Rect& bounds, const char* text, Font* font, const Color& color,
@@ -39,9 +37,7 @@ OverlayStack& OS() { static OverlayStack s; return s; }
 
 } // namespace
 
-// ===========================================================================
 // Progress bar / badge / breadcrumbs
-// ===========================================================================
 
 void ProgressBar(f32 fraction, const char* label, const Color& color) {
     Context& ctx = Context::Get();
@@ -135,9 +131,7 @@ void Breadcrumbs(const char* const* items, int count, int* hoveredIndex) {
     }
 }
 
-// ===========================================================================
 // Grid
-// ===========================================================================
 
 void Grid(Context& ctx, int columns, f32 cellSize, f32 spacing,
           bool (*drawCell)(Context&, const Rect&, int, void*), int count, void* userData) {
@@ -178,9 +172,7 @@ void Grid(Context& ctx, int columns, f32 cellSize, f32 spacing,
     ctx.NewLine();
 }
 
-// ===========================================================================
 // List
-// ===========================================================================
 
 int List(Context& ctx, const char* id, const ListItem* items, int count, int* selected,
          f32 rowHeight) {
@@ -248,9 +240,7 @@ int List(Context& ctx, const char* id, const ListItem* items, int count, int* se
     return result;
 }
 
-// ===========================================================================
 // Modal
-// ===========================================================================
 
 bool BeginModal(Context& ctx, const char* id, const char* title, const Vec2& size, bool* open,
                 Icon icon, const char* closeLabel) {
@@ -421,9 +411,7 @@ Rect ModalHeader() {
     return s.header.empty() ? Rect() : s.header.back();
 }
 
-// ===========================================================================
 // Context menu
-// ===========================================================================
 
 int ContextMenu(Context& ctx, const char* id, const char* const* labels, int count,
                 const Icon* icons, bool* open) {

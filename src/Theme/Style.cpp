@@ -3,7 +3,6 @@
 #include <cstring>
 
 namespace argon::ui {
-
 Style::Style() { Reset(Theme::Dark()); }
 Style::Style(const Theme& theme) { Reset(theme); }
 

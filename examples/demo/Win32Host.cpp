@@ -3,9 +3,7 @@
 #include <cstdio>
 
 namespace argonhost {
-
 namespace {
-
 /// Win32 virtual key -> argon::ui::Key.
 argon::ui::Key TranslateKey(WPARAM vk) {
     using namespace argon::ui;

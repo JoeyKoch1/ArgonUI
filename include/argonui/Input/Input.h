@@ -12,7 +12,6 @@
 #include "../Core/Types.h"
 
 namespace argon::ui {
-
 enum Key : int {
     Key_None = 0,
     Key_Tab, Key_LeftArrow, Key_RightArrow, Key_UpArrow, Key_DownArrow,

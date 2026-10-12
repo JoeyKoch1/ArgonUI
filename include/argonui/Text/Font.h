@@ -21,7 +21,6 @@
 #include "../Draw/DrawList.h"
 
 namespace argon::ui {
-
 /// UTF-8 decoding. Returns the codepoint and advances `i`.
 u32 DecodeUtf8(const char* text, size_t length, size_t& i);
 u32 DecodeUtf8(const std::string& text, size_t& i);

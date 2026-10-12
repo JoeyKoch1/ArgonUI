@@ -8,7 +8,6 @@
 #include "Types.h"
 
 namespace argon::ui {
-
 struct Color {
     f32 r = 0.0f, g = 0.0f, b = 0.0f, a = 1.0f;
 

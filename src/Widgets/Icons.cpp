@@ -5,9 +5,7 @@
 #include "argonui/Context.h"
 
 namespace argon::ui {
-
 namespace {
-
 /// Small helper so each icon case reads like a sketch rather than arithmetic.
 struct Pen {
     DrawList& list;

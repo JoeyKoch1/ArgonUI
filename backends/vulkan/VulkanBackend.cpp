@@ -13,7 +13,6 @@
 // KHR_swapchain / surface / debug-utils entry point is resolved through
 // vkGetInstanceProcAddr because those live in the loader, not in the library.
 
-// ---------------------------------------------------------------------------
 // 1. WSI platform
 //
 // vulkan.h only declares Vk*SurfaceCreateInfoKHR for the platforms that are
@@ -26,7 +25,6 @@
 // -DARGON_VK_SURFACE_EXT=VK_KHR_xcb_surface). It must name a platform whose
 // VK_USE_PLATFORM_* macro is defined above - that macro is what actually
 // selects the struct and the creation entry point used below.
-// ---------------------------------------------------------------------------
 
 #if defined(_WIN32)
 #  if !defined(VK_USE_PLATFORM_WIN32_KHR)
@@ -66,12 +64,9 @@ VK_USE_PLATFORM_XLIB_KHR or VK_USE_PLATFORM_XCB_KHR."
 #endif
 
 namespace argon::ui {
-
 namespace {
-
 constexpr const char* kTag = "Vulkan";
 
-// ---------------------------------------------------------------------------
 // 2. The GLSL
 //
 // These are the sources the shipped SPIR-V is compiled from, kept here so the
@@ -89,7 +84,6 @@ constexpr const char* kTag = "Vulkan";
 //
 // Blend state is PREMULTIPLIED ALPHA: (ONE, ONE_MINUS_SRC_ALPHA), so the
 // fragment shader returns rgb already multiplied by a.
-// ---------------------------------------------------------------------------
 
 constexpr const char* kArgonVertGlsl = R"GLSL(#version 450
 
@@ -262,9 +256,7 @@ void main() {
 }
 )GLSL";
 
-// ---------------------------------------------------------------------------
 // 3. Helpers
-// ---------------------------------------------------------------------------
 
 /// Generous starting sizes for the mapped vertex/index pair; both double on
 /// demand, so these only decide how often that happens.
@@ -443,9 +435,7 @@ i32 FindGraphicsFamily(VkPhysicalDevice pd, VkSurfaceKHR surface, bool requirePr
 
 } // namespace
 
-// ---------------------------------------------------------------------------
 // Lifetime
-// ---------------------------------------------------------------------------
 
 VulkanBackend::VulkanBackend() = default;
 
@@ -455,9 +445,7 @@ const char* VulkanBackend::VertexGlsl() { return kArgonVertGlsl; }
 
 const char* VulkanBackend::FragmentGlsl() { return kArgonFragGlsl; }
 
-// ---------------------------------------------------------------------------
 // Shader hooks
-// ---------------------------------------------------------------------------
 
 void VulkanBackend::SetShaderPaths(const char* vertexSpv, const char* fragmentSpv) {
     shaderVertPath_ = (vertexSpv != nullptr) ? vertexSpv : "";
@@ -478,9 +466,7 @@ void VulkanBackend::SetShaderSpv(const void* vertex, size_t vertexSize,
     }
 }
 
-// ---------------------------------------------------------------------------
 // Errors
-// ---------------------------------------------------------------------------
 
 void VulkanBackend::Fail(const char* what, VkResult result) {
     char buf[256];
@@ -490,9 +476,7 @@ void VulkanBackend::Fail(const char* what, VkResult result) {
     ARGON_ERROR(kTag, "%s", buf);
 }
 
-// ---------------------------------------------------------------------------
 // Instance
-// ---------------------------------------------------------------------------
 
 bool VulkanBackend::CreateInstance(bool wantValidation) {
     u32 extensionCount = 0;
@@ -824,9 +808,7 @@ bool VulkanBackend::CreateSurface() {
     return true;
 }
 
-// ---------------------------------------------------------------------------
 // Device
-// ---------------------------------------------------------------------------
 
 bool VulkanBackend::Initialize(const DeviceDesc& desc) {
     Shutdown();   // re-Initialize must not leak the previous target
@@ -936,9 +918,7 @@ bool VulkanBackend::Initialize(const DeviceDesc& desc) {
     return true;
 }
 
-// ---------------------------------------------------------------------------
 // Shaders
-// ---------------------------------------------------------------------------
 
 bool VulkanBackend::ResolveShaders() {
     // An embedded blob always wins; it is the only option that does not touch
@@ -1032,9 +1012,7 @@ bool VulkanBackend::CreateShaderModule(const std::vector<u8>& spirv, VkShaderMod
     return true;
 }
 
-// ---------------------------------------------------------------------------
 // Descriptor plumbing, sampler and the white 1x1
-// ---------------------------------------------------------------------------
 
 bool VulkanBackend::CreateCommandPool() {
     // One pool for every command buffer we ever allocate: the per-image ones
@@ -1121,9 +1099,7 @@ bool VulkanBackend::CreateStaticResources() {
     return true;
 }
 
-// ---------------------------------------------------------------------------
 // Render pass and pipelines
-// ---------------------------------------------------------------------------
 
 bool VulkanBackend::CreateRenderPass(VkFormat format) {
     DestroyRenderPass();
@@ -1338,9 +1314,7 @@ bool VulkanBackend::CreatePipeline(VkBlendFactor srcColor, VkBlendFactor dstColo
     return true;
 }
 
-// ---------------------------------------------------------------------------
 // Queue family for an adopted queue
-// ---------------------------------------------------------------------------
 
 bool VulkanBackend::FindQueueFamilyForQueue() {
     u32 count = 0;
@@ -1371,9 +1345,7 @@ bool VulkanBackend::FindQueueFamilyForQueue() {
     return true;
 }
 
-// ---------------------------------------------------------------------------
 // Target
-// ---------------------------------------------------------------------------
 
 bool VulkanBackend::CreateTarget(const TargetDesc& desc) {
     DestroyTarget();
@@ -1910,9 +1882,7 @@ bool VulkanBackend::ResizeTarget(u32 width, u32 height) {
     return RecreateSwapchain(width, height);
 }
 
-// ---------------------------------------------------------------------------
 // Memory
-// ---------------------------------------------------------------------------
 
 u32 VulkanBackend::FindMemoryType(u32 typeBits, VkMemoryPropertyFlags required) const {
     for (u32 i = 0; i < memoryProperties_.memoryTypeCount; ++i) {
@@ -2095,9 +2065,7 @@ bool VulkanBackend::RunOneTimeCommand(const std::function<void(VkCommandBuffer)>
     return true;
 }
 
-// ---------------------------------------------------------------------------
 // Textures
-// ---------------------------------------------------------------------------
 
 bool VulkanBackend::CreateTextureInternal(const TextureDesc& desc, const void* pixels,
                                           TextureRecord& out) {
@@ -2286,9 +2254,7 @@ void VulkanBackend::DestroyTexture(u32 handle) {
     textures_.erase(it);
 }
 
-// ---------------------------------------------------------------------------
 // Frame
-// ---------------------------------------------------------------------------
 
 bool VulkanBackend::BindTexture(VkCommandBuffer cmd, VkDescriptorSet set, VkImageView view,
                                 u32 slot) {
@@ -2572,9 +2538,7 @@ void VulkanBackend::EndFrame() {
     currentCommandBuffer_ = VK_NULL_HANDLE;
 }
 
-// ---------------------------------------------------------------------------
 // Shutdown
-// ---------------------------------------------------------------------------
 
 void VulkanBackend::Shutdown() {
     DestroyTarget();
@@ -2645,8 +2609,6 @@ void VulkanBackend::Shutdown() {
     frameSubmitted_ = false;
     drawCallCount_ = 0;
 }
-
-// ---------------------------------------------------------------------------
 
 IArgonBackend* CreateVulkanBackend() { return new VulkanBackend(); }
 

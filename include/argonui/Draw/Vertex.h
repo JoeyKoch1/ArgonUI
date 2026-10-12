@@ -24,7 +24,6 @@
 #include "../Core/Types.h"
 
 namespace argon::ui {
-
 /// Bit flags stored in Vertex::flags.
 enum VertexFlags : u32 {
     /// No gradient: colour is the border/fill weighted mix.

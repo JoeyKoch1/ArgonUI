@@ -9,9 +9,7 @@
 #include "argonui/Widgets/Widgets.h"
 
 namespace argon::ui {
-
 namespace {
-
 enum class Align { Left, Center, Right };
 
 f32 DrawTextC(Context& ctx, const Rect& bounds, const char* text, Font* font, const Color& color,
@@ -58,9 +56,7 @@ ContainerStack& CS() {
 
 } // namespace
 
-// ===========================================================================
 // Scroll area
-// ===========================================================================
 
 bool BeginScrollArea(Context& ctx, const char* id, f32 height, bool* scrollYOut,
                      bool showScrollbar) {
@@ -132,9 +128,7 @@ void EndScrollArea(Context& ctx) {
     ctx.PopClipRect();
 }
 
-// ===========================================================================
 // Section - collapsible card
-// ===========================================================================
 
 bool BeginSection(Context& ctx, const char* title, bool* open, const char* subtitle, Icon icon) {
     const u32 baseId = ctx.GetID(title != nullptr ? title : "##section");
@@ -253,9 +247,7 @@ void EndSection(Context& ctx) {
     ctx.NewLine();
 }
 
-// ===========================================================================
 // Tab bar
-// ===========================================================================
 
 int TabBar(Context& ctx, const char* id, const char* const* tabs, int count, int* active,
            Rect* animatedIndicator, Icon* tabIcons) {
@@ -327,9 +319,7 @@ int TabBar(Context& ctx, const char* id, const char* const* tabs, int count, int
     return result;
 }
 
-// ===========================================================================
 // Sidebar
-// ===========================================================================
 
 int Sidebar(Context& ctx, const char* id, const Icon* icons, int count, int* selected, f32 width,
             const int* badges) {
@@ -352,7 +342,9 @@ int Sidebar(Context& ctx, const char* id, const Icon* icons, int count, int* sel
     if (rail.Height() > itemsH) y = rail.min.y + (rail.Height() - itemsH) * 0.5f;
 
     for (int i = 0; i < count; ++i) {
-        const u32 itemId = ctx.GetID(icons[i]);
+        // A scoped enum converts to neither int nor const char*, so the icon is
+        // hashed as an integer index. GetID(const char*) would not compile here.
+        const u32 itemId = ctx.GetID(static_cast<int>(icons[i]));
         const Rect itemRect(rail.min.x + pad, y, rail.min.x + pad + itemSize, y + itemSize);
         const ItemResult r = ctx.ItemBehavior(itemId, itemRect);
 
@@ -393,12 +385,9 @@ int Sidebar(Context& ctx, const char* id, const Icon* icons, int count, int* sel
     return result;
 }
 
-// ===========================================================================
 // Window
-// ===========================================================================
 
 namespace {
-
 bool WindowImpl(Context& ctx, const char* id, const char* title, const Rect& bounds, bool* open,
                 Icon appIcon) {
     const u32 baseId = ctx.GetID(id);
@@ -495,9 +484,7 @@ void EndWindow(Context& ctx) {
     ctx.PopZ();
 }
 
-// ===========================================================================
 // Rows
-// ===========================================================================
 
 bool Row(Context& ctx, const char* label, const RowOptions& opt,
          bool (*drawControl)(Context&, const Rect&, void*), void* userData) {
@@ -544,11 +531,14 @@ bool Row(Context& ctx, const char* label, const RowOptions& opt,
         controlX = btn.min.x - ctx.Var(StyleVarId::GapSmall);
     }
 
-    // The control's own width is whatever it wants; give it the remainder.
+    // The control's own width is whatever it wants; give it the remainder. The
+    // label gets everything left of the space the control reserved, which is
+    // why RowOptions::minControlWidth exists.
+    const f32 reserve = Max(opt.minControlWidth, 0.0f);
     const Rect controlRect(x + ctx.Var(StyleVarId::GapLargeX), bounds.min.y,
                            controlX, bounds.max.y);
 
-    f32 labelMaxW = controlRect.min.x - x - ctx.Var(StyleVarId::GapLargeX);
+    const f32 labelMaxW = Max(0.0f, (controlX - reserve) - x - ctx.Var(StyleVarId::GapLargeX));
     if (label != nullptr && *label != '\0') {
         Font* font = ctx.FontAt(opt.labelFontSize > 0.0f ? opt.labelFontSize
                                                          : ctx.Var(StyleVarId::TextSize));
@@ -624,18 +614,20 @@ bool RowButtonDraw(Context& ctx, const Rect& r, void* ud) {
 }
 } // namespace
 
-bool RowToggle(const char* label, bool* value, bool) {
+bool RowToggle(const char* label, bool* value, bool enabled) {
     Context& ctx = Context::Get();
-    ToggleRef ref{value};
+    ToggleRef ref{value, false, enabled};
     RowOptions opt;
+    opt.minControlWidth = ctx.Var(StyleVarId::ToggleWidth);
     Row(ctx, label, opt, RowToggleDraw, &ref);
     return ref.changed;
 }
 
-bool RowSlider(const char* label, f32* value, f32 vmin, f32 vmax, const char* fmt, bool) {
+bool RowSlider(const char* label, f32* value, f32 vmin, f32 vmax, const char* fmt, bool enabled) {
     Context& ctx = Context::Get();
-    SliderRef ref{value, vmin, vmax, fmt};
+    SliderRef ref{value, vmin, vmax, fmt, false, enabled};
     RowOptions opt;
+    opt.minControlWidth = 200.0f;
     Row(ctx, label, opt, RowSliderDraw, &ref);
     return ref.changed;
 }

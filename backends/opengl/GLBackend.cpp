@@ -9,14 +9,10 @@
 #include "argonui/Core/Log.h"
 
 namespace argon::ui {
-
 namespace {
-
 constexpr const char* kTag = "OpenGL";
 
-// ---------------------------------------------------------------------------
 // GLSL - a line-by-line port of shaders/argonui.hlsl
-// ---------------------------------------------------------------------------
 // Both stages are stored here, in the open, because the maths has to match the
 // HLSL exactly or the backends will visibly disagree. Keep them in sync with
 // backends/common/ArgonHLSL.h and with every other API's copy.
@@ -203,9 +199,7 @@ void main() {
 }
 )GLSL";
 
-// ---------------------------------------------------------------------------
 // Small helpers
-// ---------------------------------------------------------------------------
 
 GLenum ToGlInternalFormat(TextureFormat f) {
     switch (f) {
@@ -267,9 +261,7 @@ bool CompileStage(const gl::Api& api, GLuint shader, const char* source, const c
     return false;
 }
 
-// ---------------------------------------------------------------------------
 // WGL context creation - only used by DeviceSource::CreateInternal
-// ---------------------------------------------------------------------------
 // Windows cannot ask wglCreateContext for "3.3 core"; it always returns a 1.1
 // context. The documented dance is: make ANY legacy context current so the ICD
 // has something to dispatch against, ask wglGetProcAddress for
@@ -434,8 +426,6 @@ bool WglCreateModernContext(HWND window, HGLRC* outContext, HGLRC* outPrevious, 
 
 } // namespace
 
-// ---------------------------------------------------------------------------
-
 GLBackend::GLBackend() = default;
 GLBackend::~GLBackend() { Shutdown(); }
 
@@ -460,9 +450,7 @@ bool GLBackend::CheckGl(const char* what) {
     return false;
 }
 
-// ---------------------------------------------------------------------------
 // Device
-// ---------------------------------------------------------------------------
 
 bool GLBackend::Initialize(const DeviceDesc& desc) {
     info_ = BackendInfo{};
@@ -609,9 +597,7 @@ void GLBackend::Shutdown() {
     DestroyModernContext();
 }
 
-// ---------------------------------------------------------------------------
 // Shaders and pipeline
-// ---------------------------------------------------------------------------
 
 bool GLBackend::CompileShaders() {
     const gl::Api& api = gl::Get();
@@ -809,9 +795,7 @@ bool GLBackend::EnsureVertexCapacity(size_t vertices, size_t indices) {
     return vertexBuffer_ != 0 && indexBuffer_ != 0;
 }
 
-// ---------------------------------------------------------------------------
 // Textures
-// ---------------------------------------------------------------------------
 
 bool GLBackend::CreateTextureInternal(const TextureDesc& desc, const void* pixels,
                                       TextureRecord& out) {
@@ -906,9 +890,7 @@ const GLBackend::TextureRecord* GLBackend::FindTexture(u32 handle) const {
     return nullptr;
 }
 
-// ---------------------------------------------------------------------------
 // Target
-// ---------------------------------------------------------------------------
 
 void GLBackend::ApplyTargetSize(u32 width, u32 height) {
     targetWidth_ = width;
@@ -1249,9 +1231,7 @@ void GLBackend::DestroyTarget() {
     ApplyTargetSize(0, 0);
 }
 
-// ---------------------------------------------------------------------------
 // Frame
-// ---------------------------------------------------------------------------
 
 bool GLBackend::BeginFrame(const FrameState& state) {
     if (frameBegun_) return false;                 // unbalanced Begin/End
@@ -1479,8 +1459,6 @@ bool GLBackend::ReadTargetPixels(u32 x, u32 y, u32 width, u32 height, u32 channe
     }
     return true;
 }
-
-// ---------------------------------------------------------------------------
 
 IArgonBackend* CreateOpenGLBackend() { return new GLBackend(); }
 

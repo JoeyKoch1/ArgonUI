@@ -8,10 +8,7 @@
 #include "Types.h"
 
 namespace argon::ui {
-
-// ---------------------------------------------------------------------------
 // Rect (min/max form - matches what most GPU pipelines want)
-// ---------------------------------------------------------------------------
 struct Rect {
     Vec2 min{0.0f, 0.0f};
     Vec2 max{0.0f, 0.0f};
@@ -90,9 +87,7 @@ inline Rect IntersectStrict(const Rect& a, const Rect& b) {
     return Rect(l, t, r, bm);
 }
 
-// ---------------------------------------------------------------------------
 // CornerRadius - clockwise from top-left.
-// ---------------------------------------------------------------------------
 struct CornerRadius {
     f32 tl = 0.0f;
     f32 tr = 0.0f;

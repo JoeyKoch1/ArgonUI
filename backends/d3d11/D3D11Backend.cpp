@@ -11,9 +11,7 @@
 #include "backends/common/ArgonHLSL.h"
 
 namespace argon::ui {
-
 namespace {
-
 constexpr const char* kTag = "D3D11";
 
 /// Slots reserved for context save/restore when drawing into a device we do not
@@ -47,8 +45,6 @@ u32 BytesPerTexel(TextureFormat f) { return f == TextureFormat::R8 ? 1u : 4u; }
 
 } // namespace
 
-// ---------------------------------------------------------------------------
-
 D3D11Backend::D3D11Backend() = default;
 D3D11Backend::~D3D11Backend() { Shutdown(); }
 
@@ -61,9 +57,7 @@ void D3D11Backend::Fail(const char* what, long hr) {
     ARGON_ERROR(kTag, "%s", buf);
 }
 
-// ---------------------------------------------------------------------------
 // Device
-// ---------------------------------------------------------------------------
 
 bool D3D11Backend::Initialize(const DeviceDesc& desc) {
     info_.api = GraphicsApi::D3D11;
@@ -266,9 +260,7 @@ bool D3D11Backend::CreateStaticResources() {
     return true;
 }
 
-// ---------------------------------------------------------------------------
 // Target
-// ---------------------------------------------------------------------------
 
 bool D3D11Backend::CreateSwapchainForWindow(const TargetDesc& desc, u32 width, u32 height) {
     IDXGIFactory2* factory = nullptr;
@@ -397,9 +389,7 @@ bool D3D11Backend::ResizeTarget(u32 width, u32 height) {
     return BuildRtvFromSwapchain();
 }
 
-// ---------------------------------------------------------------------------
 // Textures
-// ---------------------------------------------------------------------------
 
 bool D3D11Backend::CreateTextureInternal(const TextureDesc& desc, const void* pixels,
                                          TextureRecord& out) {
@@ -506,9 +496,7 @@ ID3D11ShaderResourceView* D3D11Backend::ResolveSrv(u32 handle) const {
     return it == textures_.end() ? whiteSrv_ : it->second.srv;
 }
 
-// ---------------------------------------------------------------------------
 // Frame
-// ---------------------------------------------------------------------------
 
 bool D3D11Backend::EnsureVertexCapacity(size_t vertices, size_t indices) {
     const size_t vBytes = vertices * sizeof(Vertex);
@@ -749,8 +737,6 @@ void D3D11Backend::Shutdown() {
     contextStateCache_.clear();
     frameBegun_ = false;
 }
-
-// ---------------------------------------------------------------------------
 
 IArgonBackend* CreateD3D11Backend() { return new D3D11Backend(); }
 

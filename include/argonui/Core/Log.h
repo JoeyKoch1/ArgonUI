@@ -13,7 +13,6 @@
 #include "Types.h"
 
 namespace argon::ui {
-
 enum class LogLevel : u8 { Trace = 0, Debug, Info, Warn, Error, Off };
 
 struct LogEntry {
@@ -49,7 +48,6 @@ private:
 };
 
 namespace detail {
-
 /// Formats `std::string msg = fmt; return msg;` on the way through so we can
 /// keep the call sites terse without dragging <sstream> into every header.
 inline void Appendf(std::string& out, const char* fmt, ...) {
