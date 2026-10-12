@@ -1,0 +1,46 @@
+# ArgonUI documentation, mapped onto the GitBook site structure.
+#
+# One space per directory. The directories already existed and were not
+# reorganised to suit this file; the mapping is one to one.
+#
+# Schema: https://api.gitbook.com/gitbook-docs.yaml
+#
+#   docs/STYLE.md and docs/SUMMARY.md sit outside every space directory, so
+#   they stay in the repository without being published. STYLE.md is a
+#   contributor note about how these pages are written, SUMMARY.md is the
+#   classic single-file navigation that predates Git Sync.
+
+$schema: https://json-schema.org/draft/2020-12/schema
+version: 1
+
+site:
+  title: ArgonUI
+  structure:
+    - type: space
+      key: space-getting-started
+      title: Getting started
+      path: getting-started
+      default: true
+      content:
+        directory: ./docs/getting-started
+
+    - type: space
+      key: space-concepts
+      title: Concepts
+      path: concepts
+      content:
+        directory: ./docs/concepts
+
+    - type: space
+      key: space-guides
+      title: Guides
+      path: guides
+      content:
+        directory: ./docs/guides
+
+    - type: space
+      key: space-api
+      title: API reference
+      path: api
+      content:
+        directory: ./docs/api
