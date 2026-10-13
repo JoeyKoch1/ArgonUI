@@ -35,16 +35,6 @@ void Check(bool condition, const char* what) {
     }
 }
 
-void CheckAtLeast(u32 value, u32 minimum, const char* what) {
-    ++g_checks;
-    if (value >= minimum) {
-        std::printf("  ok    %s (%u >= %u)\n", what, value, minimum);
-    } else {
-        ++g_failures;
-        std::printf("  FAIL  %s (%u < %u)\n", what, value, minimum);
-    }
-}
-
 /// One simulated frame, same shape as the loop in examples/demo.
 void RunFrame(Context& ctx, argondemo::MenuState& state, InputState& io, u32 index,
               bool interact) {
