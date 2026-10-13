@@ -92,22 +92,24 @@ if(ARGONUI_BUILD_D3D12)
 endif()
 
 # ---- Vulkan ----
+# Which window-system surface to compile for. Leave empty and the backend picks
+# from VK_USE_PLATFORM_*, which the backend source defines for the current OS.
+# Override with the ..._EXTENSION_NAME macro, not the bare token:
+#   cmake -DARGON_VK_SURFACE_EXT=VK_KHR_XCB_SURFACE_EXTENSION_NAME ..
+set(ARGON_VK_SURFACE_EXT "" CACHE STRING
+    "Vulkan surface extension macro; empty means pick from the platform")
+
 if(ARGONUI_BUILD_VULKAN)
-    find_package(Vulkan QUIET)
+    find_package(Vulkan REQUIRED)
     add_library(argonui-vulkan STATIC
         ${CMAKE_CURRENT_SOURCE_DIR}/backends/vulkan/VulkanBackend.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/backends/vulkan/VulkanBackend.h)
-    target_compile_definitions(argonui-vulkan PRIVATE
-        ARGON_WITH_VULKAN=1
-        # Which window-system surface to compile for.
-        # One of: win32, xcb, xlib, wayland. Override on the command line, e.g.
-        #   cmake -DARGON_VK_SURFACE_EXT=xcb ..
-        ARGON_VK_SURFACE_EXT=${ARGON_VK_SURFACE_EXT}
-    )
-    if(Vulkan_FOUND)
-        target_link_libraries(argonui-vulkan PRIVATE Vulkan::Vulkan)
-    else()
-        message(WARNING "Vulkan SDK not found; argonui-vulkan will not link")
+    target_link_libraries(argonui-vulkan PRIVATE argonui_core Vulkan::Vulkan)
+    set(ARGONUI_VULKAN_TARGET argonui-vulkan)
+    target_compile_definitions(argonui-vulkan PRIVATE ARGON_WITH_VULKAN=1)
+    if(ARGON_VK_SURFACE_EXT)
+        target_compile_definitions(argonui-vulkan PRIVATE
+            ARGON_VK_SURFACE_EXT=${ARGON_VK_SURFACE_EXT})
     endif()
 endif()
 
@@ -119,9 +121,15 @@ if(ARGONUI_BUILD_OPENGL)
         ${CMAKE_CURRENT_SOURCE_DIR}/backends/opengl/GLLoader.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/backends/opengl/GLLoader.h)
     target_compile_definitions(argonui-opengl PRIVATE ARGON_WITH_OPENGL=1)
+    # argonui_core first: it carries the repo root on the include path, which is
+    # what makes "backends/opengl/GLBackend.h" resolve. The GL sources also need
+    # the interface headers from it.
     if(WIN32)
-        target_link_libraries(argonui-opengl PRIVATE opengl32 gdi32 user32)
+        target_link_libraries(argonui-opengl PRIVATE argonui_core opengl32 gdi32 user32)
+    else()
+        target_link_libraries(argonui-opengl PRIVATE argonui_core)
     endif()
+    set(ARGONUI_OPENGL_TARGET argonui-opengl)
 endif()
 
 # ---------------------------------------------------------------------------
@@ -135,6 +143,18 @@ if(ARGONUI_BUILD_DEMO AND WIN32)
     target_link_libraries(argonui_demo PRIVATE argonui_core user32 gdi32)
     if(ARGONUI_D3D11_TARGET)
         target_link_libraries(argonui_demo PRIVATE ${ARGONUI_D3D11_TARGET})
+    endif()
+    if(ARGONUI_OPENGL_TARGET)
+        target_link_libraries(argonui_demo PRIVATE ${ARGONUI_OPENGL_TARGET})
+    endif()
+    if(ARGONUI_VULKAN_TARGET)
+        target_link_libraries(argonui_demo PRIVATE ${ARGONUI_VULKAN_TARGET})
+    endif()
+    # The entry point is wWinMain. MSVC resolves the wide one from the
+    # /SUBSYSTEM:WINDOWS that add_executable(WIN32) implies; MinGW needs to be
+    # told explicitly, or the link fails looking for WinMain.
+    if(MINGW)
+        target_link_options(argonui_demo PRIVATE -municode)
     endif()
     set_target_properties(argonui_demo PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
