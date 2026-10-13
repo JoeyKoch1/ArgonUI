@@ -12,6 +12,19 @@ set(ARGONUI_BUILD_DEMO     ON  CACHE BOOL "Build the demo application")
 set(ARGONUI_WARNINGS_AS_ERRORS OFF CACHE BOOL "Treat warnings as errors")
 set(ARGONUI_SHARED         OFF CACHE BOOL "Build ArgonUI as a shared library")
 
+# Link the compiler runtime statically. On MinGW this is the difference between
+# a demo you can copy to another machine and one that only runs from inside an
+# MSYS2 shell, because the default build depends on libgcc_s_seh-1.dll,
+# libstdc++-6.dll and libwinpthread-1.dll sitting next to it.
+# ON for MinGW, since that is where it matters; MSVC has no equivalent switch.
+if(MINGW)
+    set(_argonui_static_runtime_default ON)
+else()
+    set(_argonui_static_runtime_default OFF)
+endif()
+set(ARGONUI_STATIC_RUNTIME ${_argonui_static_runtime_default} CACHE BOOL
+    "Link the compiler runtime statically")
+
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
 endif()
@@ -65,6 +78,16 @@ else()
     if(ARGONUI_WARNINGS_AS_ERRORS)
         target_compile_options(argonui_core PRIVATE -Werror)
     endif()
+endif()
+
+# Applied to every executable, not to argonui_core: the runtime is only linked
+# into the final image, and the backends are static libraries that carry no
+# runtime of their own.
+if(ARGONUI_STATIC_RUNTIME AND MINGW)
+    set(ARGONUI_RUNTIME_LINK_OPTIONS
+        -static-libgcc -static-libstdc++ -static)
+else()
+    set(ARGONUI_RUNTIME_LINK_OPTIONS "")
 endif()
 
 # ---------------------------------------------------------------------------
@@ -154,7 +177,7 @@ if(ARGONUI_BUILD_DEMO AND WIN32)
     # /SUBSYSTEM:WINDOWS that add_executable(WIN32) implies; MinGW needs to be
     # told explicitly, or the link fails looking for WinMain.
     if(MINGW)
-        target_link_options(argonui_demo PRIVATE -municode)
+        target_link_options(argonui_demo PRIVATE -municode ${ARGONUI_RUNTIME_LINK_OPTIONS})
     endif()
     set_target_properties(argonui_demo PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
@@ -179,11 +202,16 @@ if(ARGONUI_BUILD_TESTS)
     if(WIN32)
         target_link_libraries(argonui_tests PRIVATE user32 gdi32)
     endif()
+    if(MINGW)
+        target_link_options(argonui_tests PRIVATE ${ARGONUI_RUNTIME_LINK_OPTIONS})
+    endif()
     # DemoMenu.cpp is the reference layout; the tests drive it directly so a
     # regression in the shipped example fails the test run too.
     target_sources(argonui_tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/examples/demo/DemoMenu.cpp)
     add_test(NAME headless COMMAND argonui_tests)
+    set_target_properties(argonui_tests PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 endif()
 
 # ---------------------------------------------------------------------------
@@ -208,4 +236,5 @@ message(STATUS "  Vulkan ........... ${ARGONUI_BUILD_VULKAN}")
 message(STATUS "  OpenGL ........... ${ARGONUI_BUILD_OPENGL}")
 message(STATUS "  demo ............. ${ARGONUI_BUILD_DEMO}")
 message(STATUS "  tests ............ ${ARGONUI_BUILD_TESTS}")
+message(STATUS "  static runtime ... ${ARGONUI_STATIC_RUNTIME}")
 message(STATUS "")
