@@ -60,8 +60,8 @@ int SegmentedControl(const char* id, const char* const* options, int count, int*
     Context& ctx = Context::Get();
     const u32 baseId = ctx.GetID(id);
 
-    Font* font = ctx.FontAt(ctx.Var(StyleVarId::TextSizeSmall));
-    const f32 h = ctx.Var(StyleVarId::ButtonHeight) - 2.0f;
+    Font* font = ctx.FontAt(ctx.GetVar(StyleVarId::TextSizeSmall));
+    const f32 h = ctx.GetVar(StyleVarId::ButtonHeight) - 2.0f;
     const f32 padX = 10.0f;
 
     f32 w = itemWidth;
@@ -76,19 +76,19 @@ int SegmentedControl(const char* id, const char* const* options, int count, int*
     const Rect trackRect(ctx.CursorPos(), ctx.CursorPos() + Vec2(trackW, h + 6.0f));
     const f32 trackRadius = (h + 6.0f) * 0.5f;
 
-    ctx.AddBox(trackRect, ctx.Color(StyleColorId::FieldBg), CornerRadius(trackRadius),
-               1.0f, ctx.Color(StyleColorId::FieldBorder));
+    ctx.AddBox(trackRect, ctx.GetColor(StyleColorId::FieldBg), CornerRadius(trackRadius),
+               1.0f, ctx.GetColor(StyleColorId::FieldBorder));
 
     // Animated pill position. Uses AnimVec2 so the slide is frame-rate safe.
     int cur = (selected != nullptr) ? *selected : 0;
     cur = Clamp(cur, 0, Max(0, count - 1));
     const Vec2 target(w * static_cast<f32>(cur), 0.0f);
-    const Vec2 pos = ctx.AnimVec2(baseId ^ 0x5e11u, target, ctx.Var(StyleVarId::HoverRate) * 1.4f);
+    const Vec2 pos = ctx.AnimVec2(baseId ^ 0x5e11u, target, ctx.GetVar(StyleVarId::HoverRate) * 1.4f);
 
     const Rect pillRect(trackRect.min.x + 3.0f + pos.x, trackRect.min.y + 3.0f,
                         trackRect.min.x + 3.0f + pos.x + w, trackRect.max.y - 3.0f);
-    ctx.AddBox(pillRect, ctx.Color(StyleColorId::CardBgHover), CornerRadius(trackRadius),
-               1.0f, ctx.Color(StyleColorId::CardBorder));
+    ctx.AddBox(pillRect, ctx.GetColor(StyleColorId::CardBgHover), CornerRadius(trackRadius),
+               1.0f, ctx.GetColor(StyleColorId::CardBorder));
 
     const ItemResult trackHit = ctx.ItemBehavior(baseId ^ 0x77u, trackRect,
                                                  ItemFlags::AllowOverlap);
@@ -100,8 +100,8 @@ int SegmentedControl(const char* id, const char* const* options, int count, int*
                             trackRect.min.x + 3.0f + w * static_cast<f32>(i + 1),
                             trackRect.max.y - 3.0f);
         const ItemResult r = ctx.ItemBehavior(itemId, itemRect, ItemFlags::AllowOverlap);
-        const Color fg = (i == cur) ? ctx.Color(StyleColorId::Text)
-                                    : ctx.Color(StyleColorId::TextDim);
+        const Color fg = (i == cur) ? ctx.GetColor(StyleColorId::Text)
+                                    : ctx.GetColor(StyleColorId::TextDim);
         DrawText(ctx, itemRect, options[i], font, fg, TextAlign2::Center);
         if (r.clicked) result = i;
     }
@@ -121,10 +121,10 @@ int SegmentedControl(const char* id, const char* const* options, int count, int*
 int PopupList(Context& ctx, const char* id, const Rect& anchor, const char* const* labels,
               int count, int* selected, f32 width, bool* open, const Icon* icons) {
     const u32 baseId = ctx.GetID(id);
-    Font* font = ctx.FontAt(ctx.Var(StyleVarId::TextSize));
-    const f32 itemH = ctx.Var(StyleVarId::PopupItemHeight);
-    const f32 padX = ctx.Var(StyleVarId::PopupItemPaddingX);
-    const f32 padY = ctx.Var(StyleVarId::PopupPadding);
+    Font* font = ctx.FontAt(ctx.GetVar(StyleVarId::TextSize));
+    const f32 itemH = ctx.GetVar(StyleVarId::PopupItemHeight);
+    const f32 padX = ctx.GetVar(StyleVarId::PopupItemPaddingX);
+    const f32 padY = ctx.GetVar(StyleVarId::PopupPadding);
 
     f32 w = width;
     if (w <= 0.0f) {
@@ -153,11 +153,11 @@ int PopupList(Context& ctx, const char* id, const Rect& anchor, const char* cons
     const f32 slide = (1.0f - anim) * -6.0f;
     const Rect visible(rect.min.x, rect.min.y + slide, rect.max.x, rect.max.y + slide);
 
-    ctx.AddBox(visible, ctx.Color(StyleColorId::PanelBg).WithAlpha(ctx.Alpha()),
-               CornerRadius(ctx.Var(StyleVarId::PopupRadius)),
-               1.0f, ctx.Color(StyleColorId::CardBorder),
-               ctx.Var(StyleVarId::PopupShadowSize),
-               ctx.Color(StyleColorId::Shadow));
+    ctx.AddBox(visible, ctx.GetColor(StyleColorId::PanelBg).WithAlpha(ctx.Alpha()),
+               CornerRadius(ctx.GetVar(StyleVarId::PopupRadius)),
+               1.0f, ctx.GetColor(StyleColorId::CardBorder),
+               ctx.GetVar(StyleVarId::PopupShadowSize),
+               ctx.GetColor(StyleColorId::Shadow));
 
     ctx.PushClipRect(visible);
 
@@ -171,9 +171,9 @@ int PopupList(Context& ctx, const char* id, const Rect& anchor, const char* cons
         if (r.hovered || (selected != nullptr && *selected == i)) {
             ctx.AddBox(itemRect,
                        (selected != nullptr && *selected == i)
-                           ? ctx.Color(StyleColorId::Selection)
-                           : ctx.Color(StyleColorId::CardBgHover),
-                       CornerRadius(ctx.Var(StyleVarId::ListItemRadius)));
+                           ? ctx.GetColor(StyleColorId::Selection)
+                           : ctx.GetColor(StyleColorId::CardBgHover),
+                       CornerRadius(ctx.GetVar(StyleVarId::ListItemRadius)));
         }
 
         f32 tx = itemRect.min.x + padX;
@@ -182,11 +182,11 @@ int PopupList(Context& ctx, const char* id, const Rect& anchor, const char* cons
             const Rect ir(itemRect.min.x + padX, itemRect.GetCenter().y - gs * 0.5f,
                           itemRect.min.x + padX + gs, itemRect.GetCenter().y + gs * 0.5f);
             DrawIcon(ctx.MutableDrawList(), icons[i], ir, 1.6f,
-                     ctx.Color(StyleColorId::TextDim));
+                     ctx.GetColor(StyleColorId::TextDim));
             tx = ir.max.x + 10.0f;
         }
         DrawText(ctx, Rect(tx, itemRect.min.y, itemRect.max.x - padX, itemRect.max.y),
-                 labels[i], font, ctx.Color(StyleColorId::Text), TextAlign2::Left);
+                 labels[i], font, ctx.GetColor(StyleColorId::Text), TextAlign2::Left);
 
         if (r.clicked) {
             result = i;
@@ -206,10 +206,10 @@ int Combo(const char* id, const char* const* options, int count, int* selected, 
     const u32 baseId = ctx.GetID(id);
     WidgetState& st = ctx.State(baseId);
 
-    Font* font = ctx.FontAt(ctx.Var(StyleVarId::TextSize));
-    const f32 h = ctx.Var(StyleVarId::FrameHeight);
-    const f32 radius = ctx.Var(StyleVarId::FrameRadius);
-    const f32 padX = ctx.Var(StyleVarId::FramePaddingX);
+    Font* font = ctx.FontAt(ctx.GetVar(StyleVarId::TextSize));
+    const f32 h = ctx.GetVar(StyleVarId::FrameHeight);
+    const f32 radius = ctx.GetVar(StyleVarId::FrameRadius);
+    const f32 padX = ctx.GetVar(StyleVarId::FramePaddingX);
 
     f32 w = width;
     if (w <= 0.0f) {
@@ -233,16 +233,16 @@ int Combo(const char* id, const char* const* options, int count, int* selected, 
     }
 
     const bool focused = open || ctx.ActiveId() == baseId;
-    const Color bg = focused ? ctx.Color(StyleColorId::FieldBgHover)
-                             : ctx.Color(StyleColorId::FieldBg);
-    const Color border = focused ? ctx.Color(StyleColorId::FieldBorderFocus)
-                                 : ctx.Color(StyleColorId::FieldBorder);
+    const Color bg = focused ? ctx.GetColor(StyleColorId::FieldBgHover)
+                             : ctx.GetColor(StyleColorId::FieldBg);
+    const Color border = focused ? ctx.GetColor(StyleColorId::FieldBorderFocus)
+                                 : ctx.GetColor(StyleColorId::FieldBorder);
     ctx.AddBox(bounds, bg, CornerRadius(radius), 1.0f, border);
 
     const int cur = (selected != nullptr) ? *selected : -1;
     const bool hasValue = cur >= 0 && cur < count;
     const char* text = hasValue ? options[cur] : (placeholder != nullptr ? placeholder : "");
-    const Color fg = hasValue ? ctx.Color(StyleColorId::Text) : ctx.Color(StyleColorId::TextMuted);
+    const Color fg = hasValue ? ctx.GetColor(StyleColorId::Text) : ctx.GetColor(StyleColorId::TextMuted);
     DrawText(ctx, Rect(bounds.min.x + padX, bounds.min.y, bounds.max.x - 22.0f, bounds.max.y),
              text, font, fg, TextAlign2::Left);
 
@@ -250,13 +250,13 @@ int Combo(const char* id, const char* const* options, int count, int* selected, 
     const f32 cs = h * 0.42f;
     const Rect chev(bounds.max.x - padX - cs, bounds.GetCenter().y - cs * 0.5f,
                     bounds.max.x - padX, bounds.GetCenter().y + cs * 0.5f);
-    const f32 rot = ctx.AnimFloat(baseId ^ 0x3c3c3cu, open ? 1.0f : 0.0f, ctx.Var(StyleVarId::HoverRate));
+    const f32 rot = ctx.AnimFloat(baseId ^ 0x3c3c3cu, open ? 1.0f : 0.0f, ctx.GetVar(StyleVarId::HoverRate));
     if (rot < 0.5f) {
         DrawIcon(ctx.MutableDrawList(), Icon::ChevronDown, chev, 1.6f,
-                 ctx.Color(StyleColorId::TextDim));
+                 ctx.GetColor(StyleColorId::TextDim));
     } else {
         DrawIcon(ctx.MutableDrawList(), Icon::ChevronUp, chev, 1.6f,
-                 ctx.Color(StyleColorId::TextDim));
+                 ctx.GetColor(StyleColorId::TextDim));
     }
 
     ctx.ItemSize(bounds.Size());
@@ -274,14 +274,14 @@ namespace {
 /// Shared caret/selection-free single-line editor.
 /// Returns true when the text changed.
 bool TextFieldImpl(Context& ctx, const char* id, std::string& value, const char* placeholder,
-                   bool enabled, Icon icon, const char* label) {
+                   bool enabled, Icon icon) {
     const u32 baseId = ctx.GetID(id);
     WidgetState& st = ctx.State(baseId);
 
-    Font* font = ctx.FontAt(ctx.Var(StyleVarId::TextSize));
-    const f32 h = ctx.Var(StyleVarId::FrameHeight);
-    const f32 radius = ctx.Var(StyleVarId::FrameRadius);
-    const f32 padX = ctx.Var(StyleVarId::FramePaddingX);
+    Font* font = ctx.FontAt(ctx.GetVar(StyleVarId::TextSize));
+    const f32 h = ctx.GetVar(StyleVarId::FrameHeight);
+    const f32 radius = ctx.GetVar(StyleVarId::FrameRadius);
+    const f32 padX = ctx.GetVar(StyleVarId::FramePaddingX);
 
     const f32 availW = ctx.ContentRegionAvail().Width();
     f32 w = availW;
@@ -380,32 +380,32 @@ bool TextFieldImpl(Context& ctx, const char* id, std::string& value, const char*
     const f32 fgAlpha = enabled ? 1.0f : 0.6f;
     if (!value.empty()) {
         DrawText(ctx, textRect, value.c_str(), font,
-                 ctx.Color(StyleColorId::Text).WithAlpha(fgAlpha), TextAlign2::Left);
+                 ctx.GetColor(StyleColorId::Text).WithAlpha(fgAlpha), TextAlign2::Left);
     } else if (placeholder != nullptr && placeholder[0] != '\0') {
         DrawText(ctx, textRect, placeholder, font,
-                 ctx.Color(StyleColorId::TextMuted).WithAlpha(fgAlpha), TextAlign2::Left);
+                 ctx.GetColor(StyleColorId::TextMuted).WithAlpha(fgAlpha), TextAlign2::Left);
     }
 
     if (icon != Icon::None) {
         const f32 gs = h * 0.52f;
         const Rect ir(bounds.min.x + padX, bounds.GetCenter().y - gs * 0.5f,
                       bounds.min.x + padX + gs, bounds.GetCenter().y + gs * 0.5f);
-        DrawIcon(ctx.MutableDrawList(), icon, ir, 1.6f, ctx.Color(StyleColorId::TextDim));
+        DrawIcon(ctx.MutableDrawList(), icon, ir, 1.6f, ctx.GetColor(StyleColorId::TextDim));
     }
 
     // Blinking caret while focused.
-    if (ctx.FocusId() == baseId && enabled) {
+    if (focused && enabled) {
         const f32 blink = 1.0f + std::sin(ctx.Time() * 6.0f) * 0.5f;
         const size_t caret = CaretClamp(value, st.payload);
         const f32 cx = textRect.min.x + font->MeasureLine(value.c_str(), caret);
         const Rect caretRect(cx, textRect.min.y + 4.0f, cx + 1.6f, textRect.max.y - 4.0f);
-        ctx.AddBox(caretRect, ctx.Color(StyleColorId::Accent).WithAlpha(0.35f + blink * 0.65f));
+        ctx.AddBox(caretRect, ctx.GetColor(StyleColorId::Accent).WithAlpha(0.35f + blink * 0.65f));
     }
 
-    const Color bg = ctx.FocusId() == baseId ? ctx.Color(StyleColorId::FieldBgHover)
-                                             : ctx.Color(StyleColorId::FieldBg);
-    const Color border = ctx.FocusId() == baseId ? ctx.Color(StyleColorId::Accent)
-                                                 : ctx.Color(StyleColorId::FieldBorder);
+    const Color bg = focused ? ctx.GetColor(StyleColorId::FieldBgHover)
+                                             : ctx.GetColor(StyleColorId::FieldBg);
+    const Color border = focused ? ctx.GetColor(StyleColorId::Accent)
+                                                 : ctx.GetColor(StyleColorId::FieldBorder);
     ctx.AddBox(bounds, bg, CornerRadius(radius), 1.0f, border);
 
     if (!enabled) ctx.PopStyleVar(1);
@@ -420,7 +420,7 @@ bool TextFieldImpl(Context& ctx, const char* id, std::string& value, const char*
 bool TextField(Context& ctx, const char* id, char* buffer, size_t bufferSize,
                const char* placeholder, bool enabled, Icon icon) {
     std::string v(buffer != nullptr ? std::string(buffer) : std::string());
-    const bool changed = TextFieldImpl(ctx, id, v, placeholder, enabled, icon, nullptr);
+    const bool changed = TextFieldImpl(ctx, id, v, placeholder, enabled, icon);
     if (changed && buffer != nullptr && bufferSize > 0) {
         std::snprintf(buffer, bufferSize, "%s", v.c_str());
     }
@@ -429,13 +429,13 @@ bool TextField(Context& ctx, const char* id, char* buffer, size_t bufferSize,
 
 bool TextField(Context& ctx, const char* id, std::string& value, const char* placeholder,
                bool enabled, Icon icon) {
-    return TextFieldImpl(ctx, id, value, placeholder, enabled, icon, nullptr);
+    return TextFieldImpl(ctx, id, value, placeholder, enabled, icon);
 }
 
 bool SearchField(Context& ctx, const char* id, std::string& query, const char* placeholder,
                  bool enabled) {
     return TextFieldImpl(ctx, id, query, placeholder != nullptr ? placeholder : "Search",
-                         enabled, Icon::Search, nullptr);
+                         enabled, Icon::Search);
 }
 
 bool DragFloat(Context& ctx, const char* id, f32* value, f32 speed, f32 vmin, f32 vmax,
@@ -444,11 +444,11 @@ bool DragFloat(Context& ctx, const char* id, f32* value, f32 speed, f32 vmin, f3
     const u32 baseId = ctx.GetID(id);
     WidgetState& st = ctx.State(baseId);
 
-    Font* font = ctx.FontAt(ctx.Var(StyleVarId::TextSizeSmall));
+    Font* font = ctx.FontAt(ctx.GetVar(StyleVarId::TextSizeSmall));
     char buf[64];
     std::snprintf(buf, sizeof(buf), fmt != nullptr ? fmt : "%.2f", *value);
 
-    const f32 h = ctx.Var(StyleVarId::FrameHeight);
+    const f32 h = ctx.GetVar(StyleVarId::FrameHeight);
     const Rect bounds(ctx.CursorPos(), ctx.CursorPos() + Vec2(ctx.ContentRegionAvail().Width(), h));
 
     const ItemResult r = ctx.ItemBehavior(baseId, bounds);
@@ -468,10 +468,10 @@ bool DragFloat(Context& ctx, const char* id, f32* value, f32 speed, f32 vmin, f3
 
     const bool focused = ctx.ActiveId() == baseId;
     ctx.AddBox(bounds,
-               focused ? ctx.Color(StyleColorId::FieldBgHover) : ctx.Color(StyleColorId::FieldBg),
-               CornerRadius(ctx.Var(StyleVarId::FrameRadius)), 1.0f,
-               focused ? ctx.Color(StyleColorId::Accent) : ctx.Color(StyleColorId::FieldBorder));
-    DrawText(ctx, bounds, buf, font, ctx.Color(StyleColorId::Text), TextAlign2::Left);
+               focused ? ctx.GetColor(StyleColorId::FieldBgHover) : ctx.GetColor(StyleColorId::FieldBg),
+               CornerRadius(ctx.GetVar(StyleVarId::FrameRadius)), 1.0f,
+               focused ? ctx.GetColor(StyleColorId::Accent) : ctx.GetColor(StyleColorId::FieldBorder));
+    DrawText(ctx, bounds, buf, font, ctx.GetColor(StyleColorId::Text), TextAlign2::Left);
 
     ctx.ItemSize(bounds.Size());
     ctx.NewLine();
@@ -489,12 +489,12 @@ bool DragInt(Context& ctx, const char* id, int* value, f32 speed, int vmin, int 
 
 void TextBlock(Context& ctx, const char* text, const Color& color, f32 fontSize) {
     if (text == nullptr || *text == '\0') return;
-    Font* font = ctx.FontAt(fontSize > 0.0f ? fontSize : ctx.Var(StyleVarId::TextSizeSmall));
+    Font* font = ctx.FontAt(fontSize > 0.0f ? fontSize : ctx.GetVar(StyleVarId::TextSizeSmall));
     const f32 width = ctx.ContentRegionAvail().Width();
     std::vector<std::pair<size_t, size_t>> lines;
     font->WrapText(text, std::strlen(text), width, lines);
 
-    const Color c = color.a > 0.0f ? color : ctx.Color(StyleColorId::TextDim);
+    const Color c = color.a > 0.0f ? color : ctx.GetColor(StyleColorId::TextDim);
     f32 y = ctx.CursorPos().y;
     for (const auto& line : lines) {
         ctx.AddText(Vec2(ctx.CursorPos().x, y + font->Ascent()), text + line.first, c, font);
@@ -528,7 +528,7 @@ void ClearTooltips() { g_tooltips.clear(); }
 void RenderTooltips(Context& ctx) {
     if (g_tooltips.empty()) return;
 
-    Font* font = ctx.FontAt(ctx.Var(StyleVarId::TextSizeSmall));
+    Font* font = ctx.FontAt(ctx.GetVar(StyleVarId::TextSizeSmall));
     const f32 padX = 9.0f, padY = 6.0f;
 
     // The last request wins - it is always the topmost hovered widget.
@@ -541,11 +541,11 @@ void RenderTooltips(Context& ctx) {
     y = Clamp(y, 4.0f, Max(4.0f, ctx.Frame().displaySize.y - size.y - 8.0f));
 
     const Rect box(x, y, x + size.x + padX * 2.0f, y + size.y + padY * 2.0f);
-    ctx.AddBox(box, Color::LerpC(ctx.Color(StyleColorId::Text), Color::Hex(0x0A0B0Du), 0.86f),
-               CornerRadius(6.0f), 1.0f, ctx.Color(StyleColorId::Text).WithAlpha(0.14f),
-               10.0f, ctx.Color(StyleColorId::Shadow));
+    ctx.AddBox(box, Color::LerpC(ctx.GetColor(StyleColorId::Text), Color::Hex(0x0A0B0Du), 0.86f),
+               CornerRadius(6.0f), 1.0f, ctx.GetColor(StyleColorId::Text).WithAlpha(0.14f),
+               10.0f, ctx.GetColor(StyleColorId::Shadow));
     ctx.AddText(Vec2(box.min.x + padX, box.min.y + padY + font->Ascent()), req.text.c_str(),
-                ctx.Color(StyleColorId::Text), font);
+                ctx.GetColor(StyleColorId::Text), font);
 }
 
 } // namespace argon::ui

@@ -7,8 +7,6 @@
 
 #include <cstring>
 
-using namespace argon::ui;
-
 namespace argondemo {
 namespace {
 // Small "draw this into the right-hand slot of a Row" adapters.
@@ -21,8 +19,8 @@ struct BoolRef {
 };
 bool DrawSwitch(Context& ctx, const Rect& r, void* ud) {
     auto* ref = static_cast<BoolRef*>(ud);
-    const f32 h = ctx.Var(StyleVarId::ToggleHeight);
-    const f32 w = ctx.Var(StyleVarId::ToggleWidth);
+    const f32 h = ctx.GetVar(StyleVarId::ToggleHeight);
+    const f32 w = ctx.GetVar(StyleVarId::ToggleWidth);
     ctx.SetCursorPos(Vec2(r.max.x - w, r.GetCenter().y - h * 0.5f));
     ref->changed = ToggleSwitch(ref->v);
     return ref->changed;
@@ -37,7 +35,7 @@ bool DrawSwatch(Context& ctx, const Rect& r, void* ud) {
     const Rect box(r.max.x - s, r.GetCenter().y - s * 0.5f, r.max.x, r.GetCenter().y + s * 0.5f);
     const ItemResult ir = ctx.ItemBehavior(ctx.GetID("swatch"), box);
     ctx.AddBox(box, *ref->c, CornerRadius(6.0f), 1.5f,
-               ctx.Color(StyleColorId::White).WithAlpha(0.35f));
+               ctx.GetColor(StyleColorId::White).WithAlpha(0.35f));
     if (ir.hovered) ctx.AddBox(box, Color(1, 1, 1, 0.10f), CornerRadius(6.0f));
     return ir.clicked;
 }
@@ -51,7 +49,7 @@ struct SliderRef {
 };
 bool DrawSlider(Context& ctx, const Rect& r, void* ud) {
     auto* ref = static_cast<SliderRef*>(ud);
-    const f32 h = ctx.Var(StyleVarId::SliderHeight);
+    const f32 h = ctx.GetVar(StyleVarId::SliderHeight);
     ctx.SetCursorPos(Vec2(r.min.x, r.GetCenter().y - h * 0.5f));
     ref->changed = SliderFloat("", ref->v, ref->vmin, ref->vmax, ref->fmt);
     return ref->changed;
@@ -63,7 +61,7 @@ struct DragRef {
 };
 bool DrawDragInt(Context& ctx, const Rect& r, void* ud) {
     auto* ref = static_cast<DragRef*>(ud);
-    const f32 h = ctx.Var(StyleVarId::FrameHeight);
+    const f32 h = ctx.GetVar(StyleVarId::FrameHeight);
     ctx.SetCursorPos(Vec2(r.max.x - 140.0f, r.GetCenter().y - h * 0.5f));
     ref->changed = DragInt(ctx, "row.drag", ref->v, 1.0f, 0, 99999);
     return ref->changed;
@@ -75,7 +73,7 @@ struct CtxRef {
 bool DrawFooter(Context& ctx, const Rect& r, void* ud) {
     auto* ref = static_cast<CtxRef*>(ud)->s;
     bool any = false;
-    const f32 h = ctx.Var(StyleVarId::ButtonHeight);
+    const f32 h = ctx.GetVar(StyleVarId::ButtonHeight);
     const Context::CursorState saved = ctx.SaveCursor();
 
     ctx.SetCursorPos(Vec2(r.min.x, r.GetCenter().y - h * 0.5f));
@@ -130,7 +128,7 @@ void DrawVisualsTab(Context& ctx, MenuState& s, SkinState& k) {
 
     // ---- Player -------------------------------------------------------
     BeginSection(ctx, "Player", &k.sections[0], nullptr, Icon::User);
-    RowToggle(ctx, "Enabled", &s.espEnabled);
+    RowToggle("Enabled", &s.espEnabled);
 
     {
         BoolRef ref{&s.outOfScreenArrows};
@@ -156,7 +154,7 @@ void DrawVisualsTab(Context& ctx, MenuState& s, SkinState& k) {
             [](Context& c, const Rect& r, void* ud) -> bool {
                 auto* st = static_cast<SegRef*>(ud);
                 static const char* items[] = {"Visible", "Behind wall"};
-                const f32 h = c.Var(StyleVarId::ButtonHeight) - 2.0f;
+                const f32 h = c.GetVar(StyleVarId::ButtonHeight) - 2.0f;
                 const f32 w = Min(104.0f, r.Width() * 0.5f);
                 c.SetCursorPos(Vec2(r.max.x - w * 2.0f, r.GetCenter().y - h * 0.5f));
                 st->c = SegmentedControl("row.seg", items, 2, st->v, w) > 0;
@@ -169,9 +167,9 @@ void DrawVisualsTab(Context& ctx, MenuState& s, SkinState& k) {
 
     // ---- Model --------------------------------------------------------
     BeginSection(ctx, "Model", &k.sections[1], nullptr, Icon::Cube);
-    RowToggle(ctx, "Chams", &s.wallChams, Icon::Layers);
-    RowToggle(ctx, "Hit chams", &s.tracers, Icon::Target);
-    RowToggle(ctx, "Ragdoll chams", &s.glow, Icon::Cube);
+    RowToggle("Chams", &s.wallChams, Icon::Layers);
+    RowToggle("Hit chams", &s.tracers, Icon::Target);
+    RowToggle("Ragdoll chams", &s.glow, Icon::Cube);
 
     {
         BoolRef ref{&s.glow};
@@ -218,7 +216,7 @@ void DrawSkinTab(Context& ctx, MenuState& s, SkinState& k) {
     RowOptions o;
 
     BeginSection(ctx, "Stickers & charm", &k.sections[0], nullptr, Icon::Sparkle);
-    RowCombo(ctx, "Weapon", s.skins, 4, &s.skinIndex);
+    RowCombo("Weapon", s.skins, 4, &s.skinIndex);
 
     {
         SliderRef ref{&k.wear, 0.0f, 1.0f, "%.2f"};
@@ -254,13 +252,13 @@ void DrawSkinTab(Context& ctx, MenuState& s, SkinState& k) {
     EndSection(ctx);
 
     BeginSection(ctx, "Equip", &k.sections[2]);
-    RowCombo(ctx, "Team", s.teams, 3, &s.teamMode);
+    RowCombo("Team", s.teams, 3, &s.teamMode);
     {
         o = RowOptions{};
         o.separatorAfter = false;
         Row(ctx, "Equips for Counter-Terrorists and the other team", o,
             [](Context& c, const Rect& r, void*) -> bool {
-                const f32 h = c.Var(StyleVarId::ButtonHeight);
+                const f32 h = c.GetVar(StyleVarId::ButtonHeight);
                 c.SetCursorPos(Vec2(r.max.x - 112.0f, r.GetCenter().y - h * 0.5f));
                 return ButtonWithIcon("Equip", Icon::Check, ButtonKind::Primary,
                                       IconSlot::Left, Vec2(112.0f, h));
@@ -288,12 +286,12 @@ void DrawGallery(Context& ctx) {
              const f32 gs = 32.0f;
              const Rect ir(r.GetCenter().x - gs * 0.5f, r.min.y + 22.0f,
                            r.GetCenter().x + gs * 0.5f, r.min.y + 22.0f + gs);
-             DrawIcon(c.MutableDrawList(), e->icon, ir, 2.2f, c.Color(StyleColorId::Accent));
+             DrawIcon(c.MutableDrawList(), e->icon, ir, 2.2f, c.GetColor(StyleColorId::Accent));
 
-             Font* f = c.FontAt(c.Var(StyleVarId::TextSizeSmall));
+             Font* f = c.FontAt(c.GetVar(StyleVarId::TextSizeSmall));
              const f32 tw = f->MeasureLine(e->name, std::strlen(e->name));
              c.AddText(Vec2(r.GetCenter().x - tw * 0.5f, r.max.y - 14.0f), e->name,
-                       c.Color(StyleColorId::TextDim), f);
+                       c.GetColor(StyleColorId::TextDim), f);
              return false;
          },
          n, const_cast<GalleryEntry*>(entries));

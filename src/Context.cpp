@@ -1,4 +1,5 @@
 #include "argonui/Context.h"
+#include "argonui/Backend/Registry.h"
 
 #include <algorithm>
 #include <cmath>
@@ -12,8 +13,13 @@ thread_local Context* g_currentContext = nullptr;
 constexpr f32 kMaxDeltaTime = 0.25f;  // 250 ms clamp; a hitch must not teleport animations
 constexpr f32 kDoubleClickInterval = 0.35f;
 constexpr f32 kDoubleClickRadius = 6.0f;
+} // namespace
 
-LayoutEntry MakeLayoutEntry(const Rect& content, f32 spacingX, f32 spacingY) {
+// Current instance
+
+/// A member rather than a file-scope helper: LayoutEntry is a private nested
+/// type, and a free function in an anonymous namespace cannot name it.
+Context::LayoutEntry Context::MakeLayoutEntry(const Rect& content, f32 spacingX, f32 spacingY) {
     LayoutEntry e{};
     e.content = content;
     e.cursor = content.min;
@@ -27,9 +33,6 @@ LayoutEntry MakeLayoutEntry(const Rect& content, f32 spacingX, f32 spacingY) {
     e.itemSpacingY = spacingY;
     return e;
 }
-} // namespace
-
-// Current instance
 
 Context* Context::Current() { return g_currentContext; }
 void Context::SetCurrent(Context* ctx) { g_currentContext = ctx; }
@@ -77,11 +80,17 @@ bool Context::Initialize(IArgonBackend* backend, const ContextConfig& config) {
                                             style_.GetVar(StyleVarId::ItemSpacingX),
                                             style_.GetVar(StyleVarId::ItemSpacingY)));
 
-    if (g_currentContext == nullptr) g_currentContext = this;
+    // Widgets that do not take a Context reach it through Context::Get(), so the
+    // most recently initialized context is the current one. Leaving the first
+    // one in place instead would mean a second Context silently drew into the
+    // first, with no error anywhere.
+    g_currentContext = this;
     return true;
 }
 
 void Context::Shutdown() {
+    if (g_currentContext == this) g_currentContext = nullptr;
+
     // Release GPU-side resources *before* the backend goes away.
     if (backend_ != nullptr) {
         fonts_.ReleaseTextures(*backend_);
@@ -198,8 +207,7 @@ void Context::ComputeEdgeStates() {
             mouseDownTime_[b] = now;
             in.mouseDownDuration[b] = 0.0f;
             if (now - lastClickTime_[b] < kDoubleClickInterval &&
-                (in.mousePos - lastClickPos_[b]).Size().x <= kDoubleClickRadius &&
-                (in.mousePos - lastClickPos_[b]).Size().y <= kDoubleClickRadius) {
+                (in.mousePos - lastClickPos_[b]).Length() <= kDoubleClickRadius) {
                 in.mouseDoubleClicked[b] = true;
                 lastClickTime_[b] = now - kDoubleClickInterval;  // no triple-click report
             } else {
@@ -511,10 +519,10 @@ ItemResult Context::ItemBehavior(u32 id, const Rect& bounds, ItemFlags flags) {
     ItemResult r{};
     r.bounds = bounds;
 
-    const bool noInteraction = (flags & ItemFlags::NoInteraction) != 0;
-    const bool allowOverlap = (flags & ItemFlags::AllowOverlap) != 0;
+    const bool noInteraction = Has(flags, ItemFlags::NoInteraction);
+    const bool allowOverlap = Has(flags, ItemFlags::AllowOverlap);
 
-    r.hoveredExact = !noInteraction && IsMouseHoveringRect(bounds, (flags & ItemFlags::NoClip) == 0);
+    r.hoveredExact = !noInteraction && IsMouseHoveringRect(bounds, !Has(flags, ItemFlags::NoClip));
 
     // Hover arbitration: the first claim on a layer wins, but a higher layer
     // always takes over. Popups and modals then feel modal without any
@@ -558,7 +566,7 @@ ItemResult Context::ItemBehavior(u32 id, const Rect& bounds, ItemFlags flags) {
     r.clicked = r.released && bounds.Contains(input_.releasePos[Mouse_Left]);
 
     // Release clears the active id unless the widget asked to keep it.
-    if (r.released && (flags & ItemFlags::KeepsActive) == 0) {
+    if (r.released && !Has(flags, ItemFlags::KeepsActive)) {
         activeId_ = 0;
     }
 
@@ -712,7 +720,9 @@ f32 Context::CalcTextSizeX(const char* text, Font* font) const {
     return CalcTextSize(text, font).x;
 }
 
-f32 Context::CalcTextHeight(const char* text, Font* font) const {
+f32 Context::CalcTextHeight(const char* /*text*/, Font* font) const {
+    // One line is one line regardless of what is in it; the height comes from
+    // the font's own metrics, not from the glyphs being drawn.
     if (font == nullptr) font = currentFont_;
     return font != nullptr ? font->LineHeight() : 0.0f;
 }
@@ -735,7 +745,7 @@ f32 Context::AddText(const Vec2& pos, const char* text, const Color& color, Font
     }
 
     const DrawList::BatchState saved = drawList_.SaveBatchState();
-    drawList_.SetTexture(texId, CmdFlags::FontAtlas);
+    drawList_.SetTexture(texId, CmdFlags::None);
 
     const size_t length = std::strlen(text);
     Vec2 pen(pos.x, pos.y);  // pen.y is the baseline

@@ -2,7 +2,11 @@
 
 #include <cstdio>
 
+#include "argonui/Core/Types.h"
+
 namespace argonhost {
+using namespace argon::ui;
+
 namespace {
 /// Win32 virtual key -> argon::ui::Key.
 argon::ui::Key TranslateKey(WPARAM vk) {
@@ -49,7 +53,8 @@ bool Win32Host::Create(const wchar_t* title, int width, int height, std::string*
     wc.style = CS_HREDRAW | CS_VREDRAW;
     wc.lpfnWndProc = &Win32Host::WndProc;
     wc.hInstance = GetModuleHandleW(nullptr);
-    wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+    // IDC_ARROW expands to an ANSI MAKEINTRESOURCE; the W entry point needs the wide form.
+    wc.hCursor = LoadCursorW(nullptr, MAKEINTRESOURCEW(32512));
     wc.lpszClassName = L"ArgonUIHost";
     if (RegisterClassExW(&wc) == 0) {
         if (error != nullptr) *error = "RegisterClassEx failed";

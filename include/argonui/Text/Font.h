@@ -16,6 +16,7 @@
 #include <utility>
 #include <vector>
 
+#include "../Backend/Backend.h"
 #include "../Core/Rect.h"
 #include "../Core/Types.h"
 #include "../Draw/DrawList.h"

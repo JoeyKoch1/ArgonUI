@@ -1,8 +1,23 @@
 // ArgonUI - Text/Font.cpp
+//
+// stb_truetype is a single-header implementation: compiling it defines every
+// entry point it has, and most of them are not the ones ArgonUI calls. The
+// unused-function warning is about stb's surface area, not about this file, so
+// it is silenced for the include only.
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+#endif
+
 #define STB_TRUETYPE_IMPLEMENTATION
 #define STBTT_STATIC
 #include "stb_truetype.h"
 
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+
+#include "argonui/Backend/Backend.h"
 #include "argonui/Core/Log.h"
 #include "argonui/Text/Font.h"
 

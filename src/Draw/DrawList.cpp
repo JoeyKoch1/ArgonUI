@@ -308,7 +308,7 @@ void DrawList::AddArc(const Rect& bounds, f32 startDeg, f32 sweepDeg, f32 thickn
     const Vec2 c = bounds.GetCenter();
     const f32 rOuter = Min(bounds.Width(), bounds.Height()) * 0.5f;
     const f32 rInner = Max(rOuter - thickness, 0.0f);
-    const f32 steps = Max(2, static_cast<f32>((std::fabs(sweepDeg) / 6.0f) + 1.0f));
+    const f32 steps = Max(2.0f, static_cast<f32>((std::fabs(sweepDeg) / 6.0f) + 1.0f));
     const f32 step = sweepDeg / steps;
 
     auto point = [&](f32 deg, f32 radius) {
@@ -344,8 +344,8 @@ void DrawList::AddGlyphQuad(const Rect& bounds, const Rect& uv, const Color& col
 }
 
 void DrawList::InsertBackgroundBox(const Rect& bounds, const CornerRadius& radiusIn,
-                                   const Color& fill, const Color& border, const Color& glow,
-                                   f32 borderWidth, f32 glowWidth, u32 checkpoint,
+                                   const Color& fill, f32 borderWidth, const Color& border,
+                                   f32 glowWidth, const Color& glow, u32 checkpoint,
                                    const Rect& clip) {
     if (bounds.IsEmpty()) return;
     if (checkpoint > indices_.size()) return;

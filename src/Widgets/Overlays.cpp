@@ -46,9 +46,9 @@ void ProgressBar(f32 fraction, const char* label, const Color& color) {
     const Rect bounds(ctx.CursorPos(), ctx.CursorPos() + Vec2(w, h));
     const f32 f = Clamp01(fraction);
 
-    ctx.AddBox(bounds, ctx.Color(StyleColorId::SliderRail), CornerRadius(h * 0.5f));
+    ctx.AddBox(bounds, ctx.GetColor(StyleColorId::SliderRail), CornerRadius(h * 0.5f));
     if (f > 0.001f) {
-        const Color c = color.a > 0.0f ? color : ctx.Color(StyleColorId::Accent);
+        const Color c = color.a > 0.0f ? color : ctx.GetColor(StyleColorId::Accent);
         const Rect fill(bounds.min.x, bounds.min.y, bounds.min.x + w * f, bounds.max.y);
         ctx.AddBox(fill, c, CornerRadius(h * 0.5f));
     }
@@ -57,8 +57,8 @@ void ProgressBar(f32 fraction, const char* label, const Color& color) {
 
     if (label != nullptr && *label != '\0') {
         DrawTextO(ctx, Rect(bounds.min.x, bounds.max.y + 4.0f, bounds.max.x, bounds.max.y + 18.0f),
-                  label, ctx.FontAt(ctx.Var(StyleVarId::TextSizeSmall)),
-                  ctx.Color(StyleColorId::TextMuted), Align::Left);
+                  label, ctx.FontAt(ctx.GetVar(StyleVarId::TextSizeSmall)),
+                  ctx.GetColor(StyleColorId::TextMuted), Align::Left);
         ctx.ItemSize(Vec2(w, 18.0f));
         ctx.NewLine();
     }
@@ -66,35 +66,29 @@ void ProgressBar(f32 fraction, const char* label, const Color& color) {
 
 Vec2 BadgeSize(const char* text, const Color&) {
     Context& ctx = Context::Get();
-    Font* font = ctx.FontAt(ctx.Var(StyleVarId::TextSizeTiny));
-    const f32 h = ctx.Var(StyleVarId::BadgeHeight);
-    const f32 pad = ctx.Var(StyleVarId::BadgePaddingX);
+    Font* font = ctx.FontAt(ctx.GetVar(StyleVarId::TextSizeTiny));
+    const f32 h = ctx.GetVar(StyleVarId::BadgeHeight);
+    const f32 pad = ctx.GetVar(StyleVarId::BadgePaddingX);
     return Vec2(font->MeasureLine(text, std::strlen(text)) + pad * 2.0f, h);
 }
 
 void Badge(const char* text, const Color& color) {
     Context& ctx = Context::Get();
-    const Color tint = color.a > 0.0f ? color : ctx.Color(StyleColorId::AccentSoft);
+    const Color tint = color.a > 0.0f ? color : ctx.GetColor(StyleColorId::AccentSoft);
     const Vec2 size = BadgeSize(text, tint);
     const Rect bounds(ctx.CursorPos(), ctx.CursorPos() + size);
-    ctx.AddBox(bounds, tint, CornerRadius(ctx.Var(StyleVarId::BadgeRadius)));
-    DrawTextO(ctx, bounds, text, ctx.FontAt(ctx.Var(StyleVarId::TextSizeTiny)),
-              color.a > 0.0f ? color : ctx.Color(StyleColorId::Accent), Align::Center);
+    ctx.AddBox(bounds, tint, CornerRadius(ctx.GetVar(StyleVarId::BadgeRadius)));
+    DrawTextO(ctx, bounds, text, ctx.FontAt(ctx.GetVar(StyleVarId::TextSizeTiny)),
+              color.a > 0.0f ? color : ctx.GetColor(StyleColorId::Accent), Align::Center);
     ctx.ItemSize(size);
     ctx.NewLine();
 }
 
 void Breadcrumbs(const char* const* items, int count, int* hoveredIndex) {
     Context& ctx = Context::Get();
-    Font* font = ctx.FontAt(ctx.Var(StyleVarId::TextSizeSmall));
+    Font* font = ctx.FontAt(ctx.GetVar(StyleVarId::TextSizeSmall));
     const f32 h = 26.0f;
 
-    // Total width first so the trailing filler bar lines up.
-    f32 total = 0.0f;
-    for (int i = 0; i < count; ++i) {
-        total += font->MeasureLine(items[i], std::strlen(items[i]));
-        if (i + 1 < count) total += 26.0f;
-    }
     const f32 avail = ctx.ContentRegionAvail().Width();
 
     f32 x = ctx.CursorPos().x;
@@ -105,9 +99,9 @@ void Breadcrumbs(const char* const* items, int count, int* hoveredIndex) {
         const Rect item(x, ctx.CursorPos().y, x + w, ctx.CursorPos().y + h);
         const ItemResult r = ctx.ItemBehavior(ctx.GetID(items[i]), item);
 
-        const Color fg = (i == count - 1) ? ctx.Color(StyleColorId::Text)
-                                          : ctx.Color(StyleColorId::TextDim);
-        DrawTextO(ctx, item, items[i], font, r.hovered ? ctx.Color(StyleColorId::Text) : fg,
+        const Color fg = (i == count - 1) ? ctx.GetColor(StyleColorId::Text)
+                                          : ctx.GetColor(StyleColorId::TextDim);
+        DrawTextO(ctx, item, items[i], font, r.hovered ? ctx.GetColor(StyleColorId::Text) : fg,
                   Align::Left);
         if (r.hovered && hoveredIndex != nullptr) *hoveredIndex = i;
 
@@ -117,7 +111,7 @@ void Breadcrumbs(const char* const* items, int count, int* hoveredIndex) {
             const Rect sep(x + 6.0f, item.GetCenter().y - gs * 0.5f, x + 6.0f + gs,
                            item.GetCenter().y + gs * 0.5f);
             DrawIcon(ctx.MutableDrawList(), Icon::ChevronRight, sep, 1.5f,
-                     ctx.Color(StyleColorId::TextMuted));
+                     ctx.GetColor(StyleColorId::TextMuted));
             x += 26.0f;
         }
     }
@@ -136,8 +130,8 @@ void Breadcrumbs(const char* const* items, int count, int* hoveredIndex) {
 void Grid(Context& ctx, int columns, f32 cellSize, f32 spacing,
           bool (*drawCell)(Context&, const Rect&, int, void*), int count, void* userData) {
     if (columns < 1) columns = 1;
-    const f32 pad = ctx.Var(StyleVarId::GridCellPadding);
-    const f32 radius = ctx.Var(StyleVarId::GridCellRadius);
+    const f32 pad = ctx.GetVar(StyleVarId::GridCellPadding);
+    const f32 radius = ctx.GetVar(StyleVarId::GridCellRadius);
     const f32 totalW = columns * cellSize + (columns - 1) * spacing;
 
     for (int i = 0; i < count; ++i) {
@@ -152,8 +146,8 @@ void Grid(Context& ctx, int columns, f32 cellSize, f32 spacing,
         const u32 cellId = ctx.GetID("gridcell");
         const ItemResult r = ctx.ItemBehavior(cellId, cell);
         ctx.AddBox(cell,
-                   r.hovered ? ctx.Color(StyleColorId::CardBgHover) : ctx.Color(StyleColorId::CardBg),
-                   CornerRadius(radius), 1.0f, ctx.Color(StyleColorId::CardBorder));
+                   r.hovered ? ctx.GetColor(StyleColorId::CardBgHover) : ctx.GetColor(StyleColorId::CardBg),
+                   CornerRadius(radius), 1.0f, ctx.GetColor(StyleColorId::CardBorder));
 
         if (drawCell != nullptr) {
             const Context::CursorState saved = ctx.SaveCursor();
@@ -176,9 +170,9 @@ void Grid(Context& ctx, int columns, f32 cellSize, f32 spacing,
 
 int List(Context& ctx, const char* id, const ListItem* items, int count, int* selected,
          f32 rowHeight) {
-    const f32 h = rowHeight > 0.0f ? rowHeight : ctx.Var(StyleVarId::ListItemHeight);
-    const f32 padX = ctx.Var(StyleVarId::RowPaddingX);
-    const f32 radius = ctx.Var(StyleVarId::ListItemRadius);
+    const f32 h = rowHeight > 0.0f ? rowHeight : ctx.GetVar(StyleVarId::ListItemHeight);
+    const f32 padX = ctx.GetVar(StyleVarId::RowPaddingX);
+    const f32 radius = ctx.GetVar(StyleVarId::ListItemRadius);
     const f32 w = ctx.ContentRegionAvail().Width();
 
     int cur = (selected != nullptr) ? *selected : -1;
@@ -192,9 +186,9 @@ int List(Context& ctx, const char* id, const ListItem* items, int count, int* se
             ctx.ItemBehavior(itemId, row, it.disabled ? ItemFlags::NoInteraction : ItemFlags::None);
 
         if (i == cur) {
-            ctx.AddBox(row, ctx.Color(StyleColorId::Selection), CornerRadius(radius));
+            ctx.AddBox(row, ctx.GetColor(StyleColorId::Selection), CornerRadius(radius));
         } else if (r.hovered && !it.disabled) {
-            ctx.AddBox(row, ctx.Color(StyleColorId::CardBgHover), CornerRadius(radius));
+            ctx.AddBox(row, ctx.GetColor(StyleColorId::CardBgHover), CornerRadius(radius));
         }
 
         f32 x = row.min.x + padX;
@@ -207,7 +201,7 @@ int List(Context& ctx, const char* id, const ListItem* items, int count, int* se
         } else if (it.icon != Icon::None) {
             const f32 gs = h * 0.50f;
             const Rect ir(x, row.GetCenter().y - gs * 0.5f, x + gs, row.GetCenter().y + gs * 0.5f);
-            DrawIcon(ctx.MutableDrawList(), it.icon, ir, 1.7f, ctx.Color(StyleColorId::TextDim));
+            DrawIcon(ctx.MutableDrawList(), it.icon, ir, 1.7f, ctx.GetColor(StyleColorId::TextDim));
             x = ir.max.x + padX;
         } else if (it.dotColor.a > 0.0f) {
             const f32 d = 7.0f;
@@ -216,19 +210,19 @@ int List(Context& ctx, const char* id, const ListItem* items, int count, int* se
             x = dot.max.x + padX;
         }
 
-        const Color fg = it.disabled ? ctx.Color(StyleColorId::TextDisabled)
-                                     : ctx.Color(StyleColorId::Text);
+        const Color fg = it.disabled ? ctx.GetColor(StyleColorId::TextDisabled)
+                                     : ctx.GetColor(StyleColorId::Text);
         f32 detailX = row.max.x - padX;
         if (it.detail != nullptr && *it.detail != '\0') {
-            const f32 dw = ctx.FontAt(ctx.Var(StyleVarId::TextSizeSmall))->MeasureLine(
+            const f32 dw = ctx.FontAt(ctx.GetVar(StyleVarId::TextSizeSmall))->MeasureLine(
                 it.detail, std::strlen(it.detail));
             DrawTextO(ctx, Rect(row.GetCenter().x, row.min.y, row.max.x - padX, row.max.y),
-                      it.detail, ctx.FontAt(ctx.Var(StyleVarId::TextSizeSmall)),
-                      ctx.Color(StyleColorId::TextMuted), Align::Right);
+                      it.detail, ctx.FontAt(ctx.GetVar(StyleVarId::TextSizeSmall)),
+                      ctx.GetColor(StyleColorId::TextMuted), Align::Right);
             detailX -= dw + padX;
         }
         DrawTextO(ctx, Rect(x, row.min.y, detailX, row.max.y), it.label,
-                  ctx.FontAt(ctx.Var(StyleVarId::TextSize)), fg, Align::Left);
+                  ctx.FontAt(ctx.GetVar(StyleVarId::TextSize)), fg, Align::Left);
 
         if (r.clicked && !it.disabled) result = i;
 
@@ -257,60 +251,67 @@ bool BeginModal(Context& ctx, const char* id, const char* title, const Vec2& siz
     ctx.PushZ();          // above any popup that might be open underneath
     ctx.PushInputLock();  // and input is locked to the modal
 
+    // Taken now, before the backdrop is drawn: InsertBackgroundBox needs the
+    // checkpoint from *before* the content and the clip that was active here,
+    // not the ones in force at EndModal.
+    const u32 checkpoint = ctx.DrawCheckpoint();
+    const Rect clip = ctx.ClipRect();
+
     const Vec2 display = ctx.Frame().displaySize;
     Vec2 s = size;
-    s.x = Max(s.x, ctx.Var(StyleVarId::ModalMinWidth));
-    s.y = Max(s.y, ctx.Var(StyleVarId::ModalMinHeight));
+    s.x = Max(s.x, ctx.GetVar(StyleVarId::ModalMinWidth));
+    s.y = Max(s.y, ctx.GetVar(StyleVarId::ModalMinHeight));
     s.x = Min(s.x, display.x - 40.0f);
     s.y = Min(s.y, display.y - 40.0f);
 
     // Entrance: fade + a short rise, driven by the open flag.
     const f32 anim = ctx.AnimTo(baseId ^ 0xa11aull, 1.0f, 0.0f);
-    const Rect frame(display.GetCenter() - s * 0.5f + Vec2(0.0f, (1.0f - anim) * 14.0f),
-                     display.GetCenter() + s * 0.5f + Vec2(0.0f, (1.0f - anim) * 14.0f));
+    const Rect frame(display * 0.5f - s * 0.5f + Vec2(0.0f, (1.0f - anim) * 14.0f),
+                     display * 0.5f + s * 0.5f + Vec2(0.0f, (1.0f - anim) * 14.0f));
 
     // Backdrop. Registered as an item so it wins hover over everything under it.
     const Rect backdrop(0, 0, display.x, display.y);
-    const ItemResult br =
-        ctx.ItemBehavior(baseId ^ 0xbaccu, backdrop, ItemFlags::NoInteraction);
+    // Registered only so the backdrop claims hover over everything under it;
+    // the result itself is not interesting.
+    ctx.ItemBehavior(baseId ^ 0xbaccu, backdrop, ItemFlags::NoInteraction);
 
-    ctx.AddBox(backdrop, ctx.Color(StyleColorId::Backdrop).WithAlpha(ctx.Color(StyleColorId::Backdrop).a * anim));
+    ctx.AddBox(backdrop, ctx.GetColor(StyleColorId::Backdrop).WithAlpha(ctx.GetColor(StyleColorId::Backdrop).a * anim));
 
-    const f32 radius = ctx.Var(StyleVarId::ModalRadius);
-    ctx.AddBox(frame, ctx.Color(StyleColorId::Shadow), CornerRadius(radius), 0.0f, Color(0, 0, 0, 0),
-               26.0f, ctx.Color(StyleColorId::Shadow));
-    ctx.AddBox(frame, ctx.Color(StyleColorId::WindowBg).WithAlpha(anim), CornerRadius(radius), 1.0f,
-               ctx.Color(StyleColorId::WindowBorder));
+    const f32 radius = ctx.GetVar(StyleVarId::ModalRadius);
+    ctx.AddBox(frame, ctx.GetColor(StyleColorId::Shadow), CornerRadius(radius), 0.0f, Color(0, 0, 0, 0),
+               26.0f, ctx.GetColor(StyleColorId::Shadow));
+    ctx.AddBox(frame, ctx.GetColor(StyleColorId::WindowBg).WithAlpha(anim), CornerRadius(radius), 1.0f,
+               ctx.GetColor(StyleColorId::WindowBorder));
 
     // Header.
-    const f32 headerH = ctx.Var(StyleVarId::ModalHeaderHeight);
+    const f32 headerH = ctx.GetVar(StyleVarId::ModalHeaderHeight);
     const Rect header(frame.min.x, frame.min.y, frame.max.x, frame.min.y + headerH);
-    ctx.AddBox(header, ctx.Color(StyleColorId::TitleBarBg).WithAlpha(anim),
+    ctx.AddBox(header, ctx.GetColor(StyleColorId::TitleBarBg).WithAlpha(anim),
                CornerRadius::Diagonal(radius));
 
-    f32 tx = header.min.x + ctx.Var(StyleVarId::ModalPadding);
+    f32 tx = header.min.x + ctx.GetVar(StyleVarId::ModalPadding);
     if (icon != Icon::None) {
         const f32 gs = 20.0f;
         const Rect ir(tx, header.GetCenter().y - gs * 0.5f, tx + gs,
                       header.GetCenter().y + gs * 0.5f);
-        DrawIcon(ctx.MutableDrawList(), icon, ir, 1.9f, ctx.Color(StyleColorId::Accent));
-        tx = ir.max.x + ctx.Var(StyleVarId::Gap);
+        DrawIcon(ctx.MutableDrawList(), icon, ir, 1.9f, ctx.GetColor(StyleColorId::Accent));
+        tx = ir.max.x + ctx.GetVar(StyleVarId::Gap);
     }
     DrawTextO(ctx, Rect(tx, header.min.y, header.max.x - 80.0f, header.max.y), title,
-              ctx.SemiboldFontAt(ctx.Var(StyleVarId::TextSizeTitle)), ctx.Color(StyleColorId::Text),
+              ctx.SemiboldFontAt(ctx.GetVar(StyleVarId::TextSizeTitle)), ctx.GetColor(StyleColorId::Text),
               Align::Left);
 
     const f32 bs = 28.0f;
-    const Rect close(header.max.x - bs - ctx.Var(StyleVarId::ModalPadding),
+    const Rect close(header.max.x - bs - ctx.GetVar(StyleVarId::ModalPadding),
                      header.GetCenter().y - bs * 0.5f,
-                     header.max.x - ctx.Var(StyleVarId::ModalPadding),
+                     header.max.x - ctx.GetVar(StyleVarId::ModalPadding),
                      header.GetCenter().y + bs * 0.5f);
     const ItemResult cr = ctx.ItemBehavior(baseId ^ 0xc105u, close);
-    if (cr.hovered) ctx.AddBox(close, ctx.Color(StyleColorId::CardBgHover), CornerRadius(7.0f));
+    if (cr.hovered) ctx.AddBox(close, ctx.GetColor(StyleColorId::CardBgHover), CornerRadius(7.0f));
     const f32 gs = bs * 0.42f;
     DrawIcon(ctx.MutableDrawList(), Icon::Close,
              Rect(close.GetCenter() - Vec2(gs * 0.5f), close.GetCenter() + Vec2(gs * 0.5f)),
-             1.7f, cr.hovered ? ctx.Color(StyleColorId::Danger) : ctx.Color(StyleColorId::TextDim));
+             1.7f, cr.hovered ? ctx.GetColor(StyleColorId::Danger) : ctx.GetColor(StyleColorId::TextDim));
     if (cr.clicked) {
         isOpen = false;
         st.opened = false;
@@ -319,17 +320,20 @@ bool BeginModal(Context& ctx, const char* id, const char* title, const Vec2& siz
 
     // Footer with optional confirm / cancel.
     f32 footerH = 0.0f;
+    // Declared out here so the stack entry below can record it even when the
+    // modal has no footer.
+    Rect footer;
     if (closeLabel != nullptr) {
-        footerH = ctx.Var(StyleVarId::ModalFooterHeight);
-        const Rect footer(frame.min.x, frame.max.y - footerH, frame.max.x, frame.max.y);
-        ctx.AddBox(footer, ctx.Color(StyleColorId::TitleBarBg).WithAlpha(anim),
+        footerH = ctx.GetVar(StyleVarId::ModalFooterHeight);
+        footer = Rect(frame.min.x, frame.max.y - footerH, frame.max.x, frame.max.y);
+        ctx.AddBox(footer, ctx.GetColor(StyleColorId::TitleBarBg).WithAlpha(anim),
                    CornerRadius::Diagonal(radius));
 
         const f32 bw = 108.0f;
-        const Rect ok(footer.max.x - ctx.Var(StyleVarId::ModalPadding) - bw,
-                      footer.GetCenter().y - 17.0f, footer.max.x - ctx.Var(StyleVarId::ModalPadding),
+        const Rect ok(footer.max.x - ctx.GetVar(StyleVarId::ModalPadding) - bw,
+                      footer.GetCenter().y - 17.0f, footer.max.x - ctx.GetVar(StyleVarId::ModalPadding),
                       footer.GetCenter().y + 17.0f);
-        const Rect cancel(ok.min.x - bw - ctx.Var(StyleVarId::Gap), ok.min.y, ok.min.x - ctx.Var(StyleVarId::Gap), ok.max.y);
+        const Rect cancel(ok.min.x - bw - ctx.GetVar(StyleVarId::Gap), ok.min.y, ok.min.x - ctx.GetVar(StyleVarId::Gap), ok.max.y);
 
         const Context::CursorState saved = ctx.SaveCursor();
         ctx.SetCursorPos(cancel.min);
@@ -348,67 +352,69 @@ bool BeginModal(Context& ctx, const char* id, const char* title, const Vec2& siz
     }
 
     // Body.
-    const f32 pad = ctx.Var(StyleVarId::ModalPadding);
+    const f32 pad = ctx.GetVar(StyleVarId::ModalPadding);
     const Rect body(header.min.x + pad, header.max.y + pad * 0.5f, header.max.x - pad,
                     frame.max.y - footerH - pad * 0.5f);
-
-    auto& s = OS();
-    s.header.push_back(header);
-    s.body.push_back(body);
-    s.footer.push_back(Rect(frame.min.x, frame.max.y - footerH, frame.max.x, frame.max.y));
-    s.wasOpen.push_back(isOpen);
-    s.checkpointClip.push_back(ctx.ClipRect());
-    s.checkpoint.push_back(ctx.DrawCheckpoint());
+    auto& stack = OS();
+    stack.header.push_back(header);
+    stack.body.push_back(body);
+    stack.footer.push_back(footer);
+    stack.wasOpen.push_back(isOpen);
+    stack.checkpointClip.push_back(clip);
+    stack.checkpoint.push_back(checkpoint);
 
     ctx.BeginLayout(body);
-    (void)br;
     return isOpen;
 }
 
 void EndModal(Context& ctx) {
-    auto& s = OS();
-    if (s.body.empty()) return;
-    s.header.pop_back();
-    s.footer.pop_back();
-    const Rect body = s.body.back();
-    s.body.pop_back();
-    s.wasOpen.pop_back();
-    const Rect clip = s.checkpointClip.back();
-    s.checkpointClip.pop_back();
-    const u32 checkpoint = s.checkpoint.back();
-    s.checkpoint.pop_back();
+    auto& stack = OS();
+    if (stack.body.empty()) return;
+    const Rect body = stack.body.back();
+    const Rect clip = stack.checkpointClip.back();
+    const u32 checkpoint = stack.checkpoint.back();
 
     const f32 contentH = Max(0.0f, ctx.CursorPos().y - body.min.y);
     ctx.EndLayout();
 
     // Surface behind the body content, sized to what the body actually used.
     if (contentH > 1.0f) {
-        const f32 radius = ctx.Var(StyleVarId::ModalRadius);
+        const f32 radius = ctx.GetVar(StyleVarId::ModalRadius);
         const Rect card(body.min.x - 10.0f, body.min.y - 8.0f, body.max.x + 10.0f,
                         body.min.y + contentH + 8.0f);
-        ctx.MutableDrawList().InsertBackgroundBox(card, CornerRadius(10.0f),
-                                                  ctx.Color(StyleColorId::CardBg), 1.0f,
-                                                  ctx.Color(StyleColorId::CardBorder), 0.0f,
+        ctx.MutableDrawList().InsertBackgroundBox(card, CornerRadius(radius),
+                                                  ctx.GetColor(StyleColorId::CardBg), 1.0f,
+                                                  ctx.GetColor(StyleColorId::CardBorder), 0.0f,
                                                   Color(0, 0, 0, 0), checkpoint, clip);
     }
 
     ctx.PopInputLock();
     ctx.PopZ();
+
+    // Pop what BeginModal pushed. Without this the stack grows by one entry per
+    // open, and ModalContent() keeps handing back the rect of a modal that is
+    // long gone.
+    stack.body.pop_back();
+    stack.footer.pop_back();
+    stack.header.pop_back();
+    stack.wasOpen.pop_back();
+    stack.checkpointClip.pop_back();
+    stack.checkpoint.pop_back();
 }
 
 Rect ModalContent() {
-    auto& s = OS();
-    return s.body.empty() ? Rect() : s.body.back();
+    auto& stack = OS();
+    return stack.body.empty() ? Rect() : stack.body.back();
 }
 
 Rect ModalFooter() {
-    auto& s = OS();
-    return s.footer.empty() ? Rect() : s.footer.back();
+    auto& stack = OS();
+    return stack.footer.empty() ? Rect() : stack.footer.back();
 }
 
 Rect ModalHeader() {
-    auto& s = OS();
-    return s.header.empty() ? Rect() : s.header.back();
+    auto& stack = OS();
+    return stack.header.empty() ? Rect() : stack.header.back();
 }
 
 // Context menu

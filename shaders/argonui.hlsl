@@ -17,9 +17,9 @@
 static const float2 kViewportMin = float2(-1.0, -1.0);
 static const float2 kViewportMax = float2( 1.0,  1.0);
 
-// ---------------------------------------------------------------------------
+ 
 // Vertex
-// ---------------------------------------------------------------------------
+ 
 
 // Attribute offsets are dictated by argon::ui::Vertex:
 //   0  pos     vec2  (x, y)
@@ -79,9 +79,9 @@ VSOut VSMain(VSIn input, uniform ViewportCB vp) {
     return o;
 }
 
-// ---------------------------------------------------------------------------
+ 
 // Fragment
-// ---------------------------------------------------------------------------
+ 
 
 Texture2D    gTexture;
 SamplerState gSampler;

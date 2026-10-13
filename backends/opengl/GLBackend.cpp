@@ -348,8 +348,11 @@ bool WglCreateModernContext(HWND window, HGLRC* outContext, HGLRC* outPrevious, 
     }
 
     // -- 2. resolve the modern entry point --------------------------------
-    auto createAttribs = reinterpret_cast<PfnWglCreateContextAttribsARB>(
-        wglGetProcAddress("wglCreateContextAttribsARB"));
+    // Through void*: wglGetProcAddress returns a generic PROC, and casting
+    // between function pointer types is not a conversion the compiler can
+    // make without a trip through a non-function type.
+    void* const proc = reinterpret_cast<void*>(wglGetProcAddress("wglCreateContextAttribsARB"));
+    auto createAttribs = reinterpret_cast<PfnWglCreateContextAttribsARB>(proc);
     if (createAttribs == nullptr) {
         SetError(err, "WGL_ARB_create_context is unavailable, so a 3.3 core profile "
                       "context cannot be created (ArgonUI requires OpenGL 3.3)");

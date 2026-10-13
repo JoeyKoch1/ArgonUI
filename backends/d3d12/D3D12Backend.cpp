@@ -82,12 +82,12 @@ HRESULT CreateDescriptorHeap(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE ty
     desc.Flags = shaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
                                : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     desc.NodeMask = 0;
-    return device->CreateDescriptorHeap(&desc, __uuidof(ID3D12DescriptorHeap), out->GetAddressOf());
+    return device->CreateDescriptorHeap(&desc, __uuidof(ID3D12DescriptorHeap), out->GetAddressOfVoid());
 }
 
 void EnableDebugLayer() {
     ComPtr<ID3D12Debug> debug;
-    if (SUCCEEDED(D3D12GetDebugInterface(__uuidof(ID3D12Debug), debug.GetAddressOf())) &&
+    if (SUCCEEDED(D3D12GetDebugInterface(__uuidof(ID3D12Debug), debug.GetAddressOfVoid())) &&
         debug != nullptr) {
         debug->EnableDebugLayer();
     } else {
@@ -148,21 +148,21 @@ bool D3D12Backend::Initialize(const DeviceDesc& desc) {
         if (desc.enableValidation) EnableDebugLayer();
 
         HRESULT hr = D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device),
-                                       device_.GetAddressOf());
+                                       device_.GetAddressOfVoid());
         if (FAILED(hr) || device_ == nullptr) {
             // Headless VM, RDP session, blocklisted adapter: fall back to WARP
             // rather than failing outright - the same courtesy the D3D11
             // backend extends.
             ComPtr<IDXGIFactory4> factory;
             ComPtr<IDXGIAdapter1> warpAdapter;
-            HRESULT warpHr = CreateDXGIFactory2(0, __uuidof(IDXGIFactory4), factory.GetAddressOf());
+            HRESULT warpHr = CreateDXGIFactory2(0, __uuidof(IDXGIFactory4), factory.GetAddressOfVoid());
             if (FAILED(warpHr) || factory == nullptr) { Fail("CreateDXGIFactory2", warpHr); return false; }
 
-            warpHr = factory->EnumWarpAdapter(__uuidof(IDXGIAdapter1), warpAdapter.GetAddressOf());
+            warpHr = factory->EnumWarpAdapter(__uuidof(IDXGIAdapter1), warpAdapter.GetAddressOfVoid());
             if (FAILED(warpHr) || warpAdapter == nullptr) { Fail("IDXGIFactory::EnumWarpAdapter", warpHr); return false; }
 
             warpHr = D3D12CreateDevice(warpAdapter.Get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device),
-                                       device_.GetAddressOf());
+                                       device_.GetAddressOfVoid());
             if (FAILED(warpHr) || device_ == nullptr) { Fail("D3D12CreateDevice(WARP)", warpHr); return false; }
             ARGON_WARN(kTag, "no hardware adapter; fell back to WARP");
         }
@@ -175,8 +175,8 @@ bool D3D12Backend::Initialize(const DeviceDesc& desc) {
         queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
         queueDesc.NodeMask = 0;
 
-        HRESULT hr = device_->CreateCommandQueue(&queueDesc, __uuidof(ID3D12CommandQueue),
-                                                  queue_.GetAddressOf());
+        hr = device_->CreateCommandQueue(&queueDesc, __uuidof(ID3D12CommandQueue),
+                                                  queue_.GetAddressOfVoid());
         if (FAILED(hr) || queue_ == nullptr) { Fail("CreateCommandQueue", hr); return false; }
 
         ownsDevice_ = true;
@@ -195,19 +195,25 @@ bool D3D12Backend::Initialize(const DeviceDesc& desc) {
         ComPtr<IDXGIDevice> dxgiDevice;
         ComPtr<IDXGIAdapter1> adapter;
         if (SUCCEEDED(device_.As(&dxgiDevice)) && dxgiDevice != nullptr &&
-            SUCCEEDED(dxgiDevice->GetAdapter(&adapter)) && adapter != nullptr) {
-            DXGI_ADAPTER_DESC1 ad{};
-            if (SUCCEEDED(adapter->GetDesc1(&ad))) {
+            SUCCEEDED(dxgiDevice->GetAdapter(reinterpret_cast<IDXGIAdapter**>(adapter.GetAddressOf()))) &&
+            adapter != nullptr) {
+            // GetDesc rather than GetDesc1: DXGI_ADAPTER_DESC1 is declared but
+            // never defined by several dxgi header sets, and the only extra
+            // field it has is the DriverVersion we would have used below.
+            DXGI_ADAPTER_DESC ad{};
+            if (SUCCEEDED(adapter->GetDesc(&ad))) {
                 char nameBuf[256]{};
                 if (WideCharToMultiByte(CP_UTF8, 0, ad.Description, -1, nameBuf,
                                         static_cast<int>(sizeof(nameBuf)), nullptr, nullptr) > 0) {
                     deviceName_ = nameBuf;
                 }
-                char verBuf[64]{};
-                std::snprintf(verBuf, sizeof(verBuf), "%u.%u.%u.%u", HIWORD(ad.DriverVersion),
-                              LOWORD(ad.DriverVersion), HIWORD(ad.DedicatedVideoMemory),
-                              LOWORD(ad.DedicatedVideoMemory));
-                driverVersion_ = verBuf;
+                // The PCI-style identifier, not a driver version. DXGI does not
+                // expose one through DXGI_ADAPTER_DESC, and inventing a number
+                // from DedicatedVideoMemory would be worse than saying nothing.
+                char idBuf[64]{};
+                std::snprintf(idBuf, sizeof(idBuf), "%04X:%04X.%08X.%02X", ad.VendorId, ad.DeviceId,
+                              ad.SubSysId, ad.Revision);
+                driverVersion_ = idBuf;
             }
         }
         // These std::strings must outlive the const char* we hand out below.
@@ -242,6 +248,8 @@ void D3D12Backend::Shutdown() {
 
     viewportMapped_ = nullptr;
     viewportBuffer_.Reset();
+    samplerBuffer_.Reset();
+    deadTexture_.Reset();
     viewportGpuAddress_ = 0;
 
     rootDescriptorHeap_.Reset();
@@ -333,7 +341,8 @@ bool D3D12Backend::CreateRootSignature() {
     cbvRange.BaseShaderRegister = 0;
     cbvRange.RegisterSpace = 0;
     cbvRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-    cbvRange.Flags = D3D12_DESCRIPTOR_RANGE_FLAGS_NONE;
+    // No Flags assignment: the member only exists in newer SDK headers, and a
+    // zero-initialised range already means D3D12_DESCRIPTOR_RANGE_FLAG_NONE.
 
     // t0: the bound texture. One SRV, pixel stage only - the vertex shader
     // never samples.
@@ -343,47 +352,41 @@ bool D3D12Backend::CreateRootSignature() {
     srvRange.BaseShaderRegister = 0;
     srvRange.RegisterSpace = 0;
     srvRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-    srvRange.Flags = D3D12_DESCRIPTOR_RANGE_FLAGS_NONE;
+    // No Flags assignment: the member only exists in newer SDK headers, and a
+    // zero-initialised range already means D3D12_DESCRIPTOR_RANGE_FLAG_NONE.
 
-    // The shader's `SamplerState gSampler;` has no register either, so it needs
-    // a static sampler at s0. There is no D3D12 equivalent of D3D11's
-    // PSSetSamplers: a sampler is either baked into the root signature or it
-    // is not bound. ArgonUI's sampler state is constant (linear, clamp), so
-    // that is not a limitation in practice - but it does mean
-    // TextureDesc::filterLinear / ::repeat are not honoured, exactly as in the
-    // D3D11 backend where a single sampler state is created and shared.
-    D3D12_STATIC_SAMPLER_DESC sampler{};
-    sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-    sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-    sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-    sampler.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
-    sampler.MinLOD = 0.0f;
-    sampler.MaxLOD = D3D12_FLOAT32_MAX;
-    sampler.MipLODBias = 0.0f;
-    sampler.MaxAnisotropy = 0;
+    // b1: the sampler. See the comment in ArgonHLSL.h; a CBV rather than a
+    // static sampler so the root signature stays at version 1.0.
+    D3D12_DESCRIPTOR_RANGE samplerRange{};
+    samplerRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+    samplerRange.NumDescriptors = 1;
+    samplerRange.BaseShaderRegister = 1;
+    samplerRange.RegisterSpace = 0;
+    samplerRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
     D3D12_ROOT_PARAMETER params[3]{};
     params[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
     params[0].DescriptorTable.pDescriptorRanges = &cbvRange;
     params[0].DescriptorTable.NumDescriptorRanges = 1;
-    params[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX | D3D12_SHADER_VISIBILITY_PIXEL;
+    params[0].ShaderVisibility =
+        static_cast<D3D12_SHADER_VISIBILITY>(D3D12_SHADER_VISIBILITY_VERTEX |
+                                             D3D12_SHADER_VISIBILITY_PIXEL);
 
     params[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
     params[1].DescriptorTable.pDescriptorRanges = &srvRange;
     params[1].DescriptorTable.NumDescriptorRanges = 1;
     params[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
-    params[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_STATIC_SAMPLER;
-    params[2].StaticSampler = sampler;
+    params[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+    params[2].DescriptorTable.pDescriptorRanges = &samplerRange;
+    params[2].DescriptorTable.NumDescriptorRanges = 1;
     params[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
     D3D12_ROOT_SIGNATURE_DESC rs{};
     rs.NumParameters = ARRAYSIZE(params);
     rs.pParameters = params;
     // Required whenever an input layout is used with a root signature.
-    rs.Flags = D3D_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+    rs.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
     ID3DBlob* blob = nullptr;
     ID3DBlob* errors = nullptr;
@@ -398,7 +401,7 @@ bool D3D12Backend::CreateRootSignature() {
     }
 
     hr = device_->CreateRootSignature(0, blob->GetBufferPointer(), blob->GetBufferSize(),
-                                      __uuidof(ID3D12RootSignature), rootSignature_.GetAddressOf());
+                                      __uuidof(ID3D12RootSignature), rootSignature_.GetAddressOfVoid());
     blob->Release();
     if (errors != nullptr) errors->Release();
     if (FAILED(hr)) { Fail("CreateRootSignature", hr); return false; }
@@ -407,7 +410,8 @@ bool D3D12Backend::CreateRootSignature() {
 
 bool D3D12Backend::CreateStaticDescriptorHeaps() {
     // Slot 0 is the built-in white 1x1, slots 1.. are host textures.
-    HRESULT hr = CreateDescriptorHeap(device_.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV, 1, true,
+    // Two CBVs: b0 viewport, b1 sampler.
+    HRESULT hr = CreateDescriptorHeap(device_.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV, 2, true,
                                       &rootDescriptorHeap_);
     if (FAILED(hr)) { Fail("CreateDescriptorHeap(CBV)", hr); return false; }
 
@@ -415,8 +419,11 @@ bool D3D12Backend::CreateStaticDescriptorHeaps() {
                               &srvHeap_);
     if (FAILED(hr)) { Fail("CreateDescriptorHeap(SRV)", hr); return false; }
 
-    srvHeapStart_ = srvHeap_->GetDescriptorHandleForHeapStart();
-    srvIncrement_ = srvHeap_->GetDescriptorIncrementSize();
+    srvHeapStart_ = srvHeap_->GetCPUDescriptorHandleForHeapStart();
+    srvHeapGpuStart_ = srvHeap_->GetGPUDescriptorHandleForHeapStart();
+    srvIncrement_ = kDescriptorStride;
+    srvSlot_.clear();
+    nextSrvSlot_ = 0;
     return true;
 }
 
@@ -443,7 +450,7 @@ bool D3D12Backend::CreateViewportConstantBuffer() {
     HRESULT hr = device_->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &desc,
                                                   D3D12_RESOURCE_STATE_COPY_DEST, nullptr,
                                                   __uuidof(ID3D12Resource),
-                                                  viewportBuffer_.GetAddressOf());
+                                                  viewportBuffer_.GetAddressOfVoid());
     if (FAILED(hr)) { Fail("CreateCommittedResource(viewport)", hr); return false; }
 
     // Mapped once and never unmapped. Safe because BeginFrame() drains the GPU
@@ -453,12 +460,81 @@ bool D3D12Backend::CreateViewportConstantBuffer() {
     if (FAILED(hr)) { Fail("Map(viewport)", hr); return false; }
     std::memset(viewportMapped_, 0, kViewportBufferBytes);
 
-    D3D12_CPU_DESCRIPTOR_HANDLE cbv = rootDescriptorHeap_->GetDescriptorHandleForHeapStart();
+    D3D12_CPU_DESCRIPTOR_HANDLE cbv = rootDescriptorHeap_->GetCPUDescriptorHandleForHeapStart();
     D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc{};
     cbvDesc.BufferLocation = viewportBuffer_->GetGPUVirtualAddress();
     cbvDesc.SizeInBytes = kViewportBufferBytes;
     device_->CreateConstantBufferView(&cbvDesc, cbv);
     viewportGpuAddress_ = viewportBuffer_->GetGPUVirtualAddress();
+    return CreateSamplerConstantBuffer();
+}
+
+/// b1: a constant buffer whose only member is a sampler. See the sampler comment
+/// in ArgonHLSL.h for why this is not a static root signature sampler.
+bool D3D12Backend::CreateSamplerConstantBuffer() {
+    D3D12_HEAP_PROPERTIES heap{};
+    heap.Type = D3D12_HEAP_TYPE_UPLOAD;
+    heap.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    heap.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    heap.CreationNodeMask = 1;
+    heap.VisibleNodeMask = 1;
+
+    D3D12_RESOURCE_DESC desc{};
+    desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    desc.Width = kSamplerBufferBytes;
+    desc.Height = 1;
+    desc.DepthOrArraySize = 1;
+    desc.MipLevels = 1;
+    desc.Format = DXGI_FORMAT_UNKNOWN;
+    desc.SampleDesc.Count = 1;
+    desc.SampleDesc.Quality = 0;
+    desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+    desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+    HRESULT hr = device_->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &desc,
+                                                  D3D12_RESOURCE_STATE_COPY_DEST, nullptr,
+                                                  __uuidof(ID3D12Resource),
+                                                  samplerBuffer_.GetAddressOfVoid());
+    if (FAILED(hr)) { Fail("CreateCommittedResource(sampler)", hr); return false; }
+
+    D3D12_RANGE readRange{0, 0};
+    hr = samplerBuffer_->Map(0, &readRange, &samplerMapped_);
+    if (FAILED(hr)) { Fail("Map(sampler)", hr); return false; }
+    std::memset(samplerMapped_, 0, kSamplerBufferBytes);
+
+    // The font atlas and the white 1x1 both want linear filtering with clamped
+    // addressing, so one sampler covers every batch.
+    D3D12_SAMPLER_DESC samp{};
+    samp.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+    samp.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    samp.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    samp.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    samp.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+    // BorderColor left at 0, which is D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK.
+    // Assigning it by name does not work everywhere: the member is a plain
+    // FLOAT[4] in older SDK headers and an enum in newer ones.
+    samp.MinLOD = 0.0f;
+    samp.MaxLOD = D3D12_FLOAT32_MAX;
+    samp.MipLODBias = 0.0f;
+    samp.MaxAnisotropy = 1;
+
+
+    std::memcpy(samplerMapped_, &samp, sizeof(samp));
+
+    if (rootDescriptorHeap_->GetDesc().NumDescriptors < 2) {
+        lastError_ = "root descriptor heap needs two CBV descriptors (viewport + sampler)";
+        ARGON_ERROR(kTag, "%s", lastError_.c_str());
+        return false;
+    }
+
+    D3D12_CPU_DESCRIPTOR_HANDLE cbv = rootDescriptorHeap_->GetCPUDescriptorHandleForHeapStart();
+    cbv.ptr += kDescriptorStride;  // slot 1
+
+    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc{};
+    cbvDesc.BufferLocation = samplerBuffer_->GetGPUVirtualAddress();
+    cbvDesc.SizeInBytes = kSamplerBufferBytes;
+    device_->CreateConstantBufferView(&cbvDesc, cbv);
+    samplerGpuAddress_ = samplerBuffer_->GetGPUVirtualAddress();
     return true;
 }
 
@@ -467,7 +543,7 @@ bool D3D12Backend::CreateFrameRing() {
     frameSlots_.resize(kFrameRingSize);
     for (u32 i = 0; i < kFrameRingSize; ++i) {
         const HRESULT hr = device_->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence),
-                                                frameSlots_[i].fence.GetAddressOf());
+                                                frameSlots_[i].fence.GetAddressOfVoid());
         if (FAILED(hr)) { Fail("CreateFence", hr); return false; }
     }
     return true;
@@ -510,13 +586,13 @@ bool D3D12Backend::RecreateBufferPair(ComPtr<ID3D12Resource>& target, ComPtr<ID3
     ComPtr<ID3D12Resource> newTarget;
     HRESULT hr = device_->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &desc,
                                                    D3D12_RESOURCE_STATE_COPY_DEST, nullptr,
-                                                   __uuidof(ID3D12Resource), newTarget.GetAddressOf());
+                                                   __uuidof(ID3D12Resource), newTarget.GetAddressOfVoid());
     if (FAILED(hr)) { Fail("CreateCommittedResource(default buffer)", hr); return false; }
 
     ComPtr<ID3D12Resource> newUpload;
     hr = device_->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &desc,
                                           D3D12_RESOURCE_STATE_COPY_DEST, nullptr,
-                                          __uuidof(ID3D12Resource), newUpload.GetAddressOf());
+                                          __uuidof(ID3D12Resource), newUpload.GetAddressOfVoid());
     if (FAILED(hr)) { Fail("CreateCommittedResource(upload buffer)", hr); return false; }
 
     void* newMapped = nullptr;
@@ -526,8 +602,8 @@ bool D3D12Backend::RecreateBufferPair(ComPtr<ID3D12Resource>& target, ComPtr<ID3
     std::memset(newMapped, 0, static_cast<size_t>(bytes));
 
     // Release the old pair only once the new one is fully built.
-    target = newTarget;
-    upload = newUpload;
+    target = std::move(newTarget);
+    upload = std::move(newUpload);
     mapped = newMapped;
     capacityBytes = bytes;
     geometryDirty_ = true;
@@ -577,6 +653,20 @@ bool D3D12Backend::CreateStaticResources() {
     TextureRecord rec;
     if (!CreateTextureInternal(1u, desc, &white, rec)) return false;
     textures_.emplace(1u, std::move(rec));
+
+    // A second 1x1, fully transparent, parked in the last descriptor slot.
+    // DestroyTexture repoints a freed slot at it, so the descriptor never ends
+    // up referencing a resource that no longer exists. CreateNullSRV would say
+    // this more directly, but a descriptor built from a resource we own works
+    // on every header set.
+    const u32 clear = 0x00000000u;
+    TextureDesc clearDesc{};
+    clearDesc.width = 1;
+    clearDesc.height = 1;
+    clearDesc.format = TextureFormat::RGBA8;
+    TextureRecord dead;
+    if (!CreateTextureInternal(kDeadSrvHandle, clearDesc, &clear, dead)) return false;
+    deadTexture_ = std::move(dead.texture);
     return true;
 }
 
@@ -584,7 +674,7 @@ bool D3D12Backend::CreateStaticResources() {
 
 bool D3D12Backend::CreateSwapchainForWindow(u32 width, u32 height) {
     ComPtr<IDXGIFactory4> factory;
-    HRESULT hr = CreateDXGIFactory2(0, __uuidof(IDXGIFactory4), factory.GetAddressOf());
+    HRESULT hr = CreateDXGIFactory2(0, __uuidof(IDXGIFactory4), factory.GetAddressOfVoid());
     if (FAILED(hr) || factory == nullptr) { Fail("CreateDXGIFactory2", hr); return false; }
 
     DXGI_SWAP_CHAIN_DESC1 sd{};
@@ -613,14 +703,15 @@ bool D3D12Backend::CreateSwapchainForWindow(u32 width, u32 height) {
     factory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER);
 
     ComPtr<IDXGISwapChain1> chain1;
-    hr = factory->CreateSwapChainForHwnd(queue_.Get(), &sd, hwnd, nullptr, chain1.GetAddressOf());
+    hr = static_cast<IDXGIFactory2*>(factory.Get())->CreateSwapChainForHwnd(
+        queue_.Get(), hwnd, &sd, nullptr, nullptr, chain1.GetAddressOf());
     if (FAILED(hr) || chain1 == nullptr) { Fail("CreateSwapChainForHwnd", hr); return false; }
 
     ComPtr<IDXGISwapChain3> chain3;
     hr = chain1.As(&chain3);
     if (FAILED(hr) || chain3 == nullptr) { Fail("QueryInterface(IDXGISwapChain3)", hr); return false; }
 
-    swapChain_ = chain3;
+    swapChain_ = std::move(chain3);
     ownsSwapchain_ = true;
     info_.ownsSwapchain = true;
     return BuildTargetResources();
@@ -643,15 +734,24 @@ bool D3D12Backend::AdoptTarget(const TargetDesc& desc) {
         return false;
     }
 
+    // The host owns the chain, but we still hold our own reference for as long
+    // as it is attached: QueryInterface gives us one, and this ComPtr balances
+    // it on the way out. ownsSwapchain_ stays false so DestroyTarget() does not
+    // try to release something that is not ours.
     ComPtr<IDXGISwapChain1> chain1;
-    HRESULT hr = chain1.As(static_cast<IDXGISwapChain*>(desc.externalSwapchain));
-    if (FAILED(hr) || chain1 == nullptr) { Fail("QueryInterface(IDXGISwapChain1)", hr); return false; }
+    IUnknown* external = static_cast<IUnknown*>(desc.externalSwapchain);
+    HRESULT hr = external->QueryInterface(
+        __uuidof(IDXGISwapChain1), reinterpret_cast<void**>(chain1.GetAddressOfVoid()));
+    if (FAILED(hr) || chain1 == nullptr) {
+        Fail("QueryInterface(IDXGISwapChain1) on the adopted swapchain", hr);
+        return false;
+    }
 
     ComPtr<IDXGISwapChain3> chain3;
     hr = chain1.As(&chain3);
     if (FAILED(hr) || chain3 == nullptr) { Fail("QueryInterface(IDXGISwapChain3)", hr); return false; }
 
-    swapChain_ = chain3;
+    swapChain_ = std::move(chain3);
     ownsSwapchain_ = false;
     info_.ownsSwapchain = false;
     ARGON_INFO(kTag, "adopted external swapchain %p", desc.externalSwapchain);
@@ -689,8 +789,8 @@ bool D3D12Backend::BuildTargetResources() {
 
     targetFormat_ = sd.Format;
     targetSampleCount_ = sd.SampleDesc.Count > 0 ? sd.SampleDesc.Count : 1u;
-    targetWidth_ = sd.BufferWidth;
-    targetHeight_ = sd.BufferHeight;
+    targetWidth_ = sd.Width;
+    targetHeight_ = sd.Height;
     targetSize_ = Vec2(static_cast<f32>(targetWidth_), static_cast<f32>(targetHeight_));
     return BuildRenderTargets();
 }
@@ -709,8 +809,8 @@ bool D3D12Backend::BuildRenderTargets() {
                               &rtvHeap);
     if (FAILED(hr)) { Fail("CreateDescriptorHeap(RTV)", hr); return false; }
 
-    const D3D12_CPU_DESCRIPTOR_HANDLE heapStart = rtvHeap->GetDescriptorHandleForHeapStart();
-    const UINT rtvIncrement = rtvHeap->GetDescriptorIncrementSize();
+    const D3D12_CPU_DESCRIPTOR_HANDLE heapStart = rtvHeap->GetCPUDescriptorHandleForHeapStart();
+    const UINT rtvIncrement = kRtvDescriptorStride;
 
     std::vector<ComPtr<ID3D12Resource>> backBuffers;
     std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> backBufferRtv;
@@ -719,14 +819,14 @@ bool D3D12Backend::BuildRenderTargets() {
 
     for (UINT i = 0; i < bufferCount; ++i) {
         ComPtr<ID3D12Resource> buffer;
-        hr = swapChain_->GetBuffer(i, __uuidof(ID3D12Resource), buffer.GetAddressOf());
+        hr = swapChain_->GetBuffer(i, __uuidof(ID3D12Resource), buffer.GetAddressOfVoid());
         if (FAILED(hr) || buffer == nullptr) { Fail("IDXGISwapChain::GetBuffer", hr); return false; }
 
         D3D12_CPU_DESCRIPTOR_HANDLE handle = heapStart;
         handle.ptr += static_cast<SIZE_T>(i) * rtvIncrement;
         device_->CreateRenderTargetView(buffer.Get(), nullptr, handle);
 
-        backBuffers.push_back(buffer);
+        backBuffers.push_back(std::move(buffer));
         backBufferRtv.push_back(handle);
     }
 
@@ -759,7 +859,7 @@ bool D3D12Backend::BuildRenderTargets() {
         // leaves this state.
         hr = device_->CreateCommittedResource(&heap, D3D12_HEAP_FLAG_NONE, &desc,
                                               D3D12_RESOURCE_STATE_RENDER_TARGET, nullptr,
-                                              __uuidof(ID3D12Resource), msaa.GetAddressOf());
+                                              __uuidof(ID3D12Resource), msaa.GetAddressOfVoid());
         if (FAILED(hr) || msaa == nullptr) {
             ARGON_WARN(kTag, "could not create a %ux MSAA target; falling back to single-sample",
                        targetSampleCount_);
@@ -776,11 +876,11 @@ bool D3D12Backend::BuildRenderTargets() {
 
     // Commit everything at once: a partial rebuild would leave a half-valid
     // frame behind if any of the steps above fails.
-    rtvHeap_ = rtvHeap;
+    rtvHeap_ = std::move(rtvHeap);
     rtvHeapStart_ = heapStart;
     backBuffers_ = std::move(backBuffers);
     backBufferRtv_ = std::move(backBufferRtv);
-    msaaTexture_ = msaa;
+    msaaTexture_ = std::move(msaa);
     msaaRtv_ = msaaHandle;
     return true;
 }
@@ -856,7 +956,7 @@ bool D3D12Backend::EnsurePipelines(DXGI_FORMAT format, u32 sampleCount) {
     pso.SampleDesc.Quality = 0;
 
     HRESULT hr = device_->CreateGraphicsPipelineState(&pso, __uuidof(ID3D12PipelineState),
-                                                       pipelineAlpha_.GetAddressOf());
+                                                       pipelineAlpha_.GetAddressOfVoid());
     if (FAILED(hr)) { Fail("CreateGraphicsPipelineState(alpha)", hr); return false; }
 
     blend.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
@@ -864,7 +964,7 @@ bool D3D12Backend::EnsurePipelines(DXGI_FORMAT format, u32 sampleCount) {
     pso.BlendState = blend;
 
     hr = device_->CreateGraphicsPipelineState(&pso, __uuidof(ID3D12PipelineState),
-                                              pipelineAdditive_.GetAddressOf());
+                                              pipelineAdditive_.GetAddressOfVoid());
     if (FAILED(hr)) { Fail("CreateGraphicsPipelineState(additive)", hr); return false; }
 
     pipelineFormat_ = format;
@@ -942,16 +1042,30 @@ void D3D12Backend::DestroyTarget() {
 // Textures
 
 D3D12_CPU_DESCRIPTOR_HANDLE D3D12Backend::SrvHandle(u32 handle) const {
-    UINT slot = 0;  // the built-in white 1x1
-    if (handle > 1) {
-        auto it = textures_.find(handle);
-        // An unknown handle degrades to white rather than to a dangling
-        // descriptor - same fallback the D3D11 backend's ResolveSrv performs.
-        slot = (it == textures_.end()) ? 0u : (handle - 1u);
-    }
+    const auto it = srvSlot_.find(handle);
+    // Slot 0 is the built-in white 1x1, so an unknown handle degrades to white
+    // rather than to a dangling descriptor - the same fallback the D3D11
+    // backend's ResolveSrv performs.
+    const UINT slot = (it == srvSlot_.end()) ? 0u : it->second;
     D3D12_CPU_DESCRIPTOR_HANDLE result = srvHeapStart_;
     result.ptr += static_cast<SIZE_T>(slot) * srvIncrement_;
     return result;
+}
+
+D3D12_GPU_DESCRIPTOR_HANDLE D3D12Backend::SrvGpuHandle(u32 handle) const {
+    const auto it = srvSlot_.find(handle);
+    const UINT slot = (it == srvSlot_.end()) ? 0u : it->second;
+    D3D12_GPU_DESCRIPTOR_HANDLE result = srvHeapGpuStart_;
+    result.ptr += static_cast<SIZE_T>(slot) * srvIncrement_;
+    return result;
+}
+
+UINT D3D12Backend::ClaimSrvSlot(u32 handle) {
+    const auto it = srvSlot_.find(handle);
+    if (it != srvSlot_.end()) return it->second;
+    const UINT slot = nextSrvSlot_++;
+    srvSlot_.emplace(handle, slot);
+    return slot;
 }
 
 bool D3D12Backend::RunTextureCommands(const D3D12_TEXTURE_COPY_LOCATION* dst,
@@ -963,14 +1077,14 @@ bool D3D12Backend::RunTextureCommands(const D3D12_TEXTURE_COPY_LOCATION* dst,
     if (copyAllocator_ == nullptr) {
         const HRESULT hr = device_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
                                                             __uuidof(ID3D12CommandAllocator),
-                                                            copyAllocator_.GetAddressOf());
+                                                            copyAllocator_.GetAddressOfVoid());
         if (FAILED(hr)) { Fail("CreateCommandAllocator(upload)", hr); return false; }
     }
     if (copyList_ == nullptr) {
         HRESULT hr = device_->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT,
                                                 copyAllocator_.Get(), nullptr,
                                                 __uuidof(ID3D12GraphicsCommandList),
-                                                copyList_.GetAddressOf());
+                                                copyList_.GetAddressOfVoid());
         if (FAILED(hr)) { Fail("CreateCommandList(upload)", hr); return false; }
         hr = copyList_->Close();
         if (FAILED(hr)) { Fail("GraphicsCommandList::Close(upload, initial)", hr); return false; }
@@ -982,11 +1096,20 @@ bool D3D12Backend::RunTextureCommands(const D3D12_TEXTURE_COPY_LOCATION* dst,
     if (FAILED(hr)) { Fail("GraphicsCommandList::Reset(upload)", hr); return false; }
 
     if (dst != nullptr && src != nullptr && dst->pResource != nullptr && src->pResource != nullptr) {
-        // CopyTextureRegion takes a non-const destination and a const source.
-        // The source here is a *buffer*: a tightly packed upload buffer needs no
+        // CopyTextureRegion has no width/height parameters: the destination
+        // takes X/Y/Z offsets and the extent comes from pSrcBox. The source
+        // here is a *buffer*, and a tightly packed upload buffer needs no
         // footprint query, because the copy reads width * height * bpp from 0.
         D3D12_TEXTURE_COPY_LOCATION dest = *dst;
-        copyList_->CopyTextureRegion(&dest, 0, 0, 0, width, height, 1, src, nullptr);
+        D3D12_TEXTURE_COPY_LOCATION source = *src;
+        D3D12_BOX box{};
+        box.left = 0;
+        box.top = 0;
+        box.front = 0;
+        box.right = static_cast<UINT>(width);
+        box.bottom = static_cast<UINT>(height);
+        box.back = 1;
+        copyList_->CopyTextureRegion(&dest, 0, 0, 0, 0, &source, 0, &box);
     }
     if (barrierResource != nullptr) {
         const D3D12_RESOURCE_BARRIER barrier = MakeTransition(barrierResource, from, to);
@@ -1050,7 +1173,7 @@ bool D3D12Backend::CreateTextureInternal(u32 handle, const TextureDesc& desc, co
         return false;
     }
     if (desc.width == 0 || desc.height == 0) return false;
-    if (handle < 1 || handle > kMaxSrvDescriptors) return false;
+    if (handle < 1 || handle >= kDeadSrvHandle) return false;
 
     out.desc = desc;
 
@@ -1077,7 +1200,7 @@ bool D3D12Backend::CreateTextureInternal(u32 handle, const TextureDesc& desc, co
     // the upload path is about to write.
     HRESULT hr = device_->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &texDesc,
                                                   D3D12_RESOURCE_STATE_COPY_DEST, nullptr,
-                                                  __uuidof(ID3D12Resource), out.texture.GetAddressOf());
+                                                  __uuidof(ID3D12Resource), out.texture.GetAddressOfVoid());
     if (FAILED(hr)) { Fail("CreateCommittedResource(texture)", hr); return false; }
 
     // Tightly packed upload buffer: width * height * bytes-per-texel, which is
@@ -1100,7 +1223,7 @@ bool D3D12Backend::CreateTextureInternal(u32 handle, const TextureDesc& desc, co
 
     hr = device_->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &uploadDesc,
                                           D3D12_RESOURCE_STATE_COPY_DEST, nullptr,
-                                          __uuidof(ID3D12Resource), out.staging.GetAddressOf());
+                                          __uuidof(ID3D12Resource), out.staging.GetAddressOfVoid());
     if (FAILED(hr)) { Fail("CreateCommittedResource(texture upload)", hr); return false; }
 
     // The SRV descriptor is written once, here, into the handle's permanent
@@ -1111,6 +1234,7 @@ bool D3D12Backend::CreateTextureInternal(u32 handle, const TextureDesc& desc, co
     srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
     srvDesc.Texture2D.MipLevels = 1;
     srvDesc.Texture2D.MostDetailedMip = 0;
+    ClaimSrvSlot(handle);
     device_->CreateShaderResourceView(out.texture.Get(), &srvDesc, SrvHandle(handle));
 
     if (pixels != nullptr) {
@@ -1128,7 +1252,7 @@ bool D3D12Backend::CreateTextureInternal(u32 handle, const TextureDesc& desc, co
 u32 D3D12Backend::CreateTexture(const TextureDesc& desc, const void* pixels) {
     if (device_ == nullptr || srvHeap_ == nullptr) return 0;
     if (desc.width == 0 || desc.height == 0) return 0;
-    if (nextTextureId_ > kMaxSrvDescriptors) {
+    if (nextTextureId_ >= kDeadSrvHandle) {
         lastError_ = "texture descriptor heap is full";
         ARGON_ERROR(kTag, "%s", lastError_.c_str());
         return 0;
@@ -1170,8 +1294,12 @@ void D3D12Backend::DestroyTexture(u32 handle) {
 
     // Blank the slot. The heap outlives every texture, and a descriptor left
     // pointing at a destroyed resource is a dangling view that the debug layer
-    // (and a future allocator) would happily read.
-    if (device_ != nullptr && srvHeap_ != nullptr) device_->CreateNullDescriptor(SrvHandle(handle));
+    // (and a future allocator) would happily read. Repointing at the 1x1
+    // transparent texture keeps the descriptor valid without inventing a
+    // CreateNullSRV dependency.
+    if (device_ != nullptr && srvHeap_ != nullptr && deadTexture_ != nullptr) {
+        device_->CreateShaderResourceView(deadTexture_.Get(), nullptr, SrvHandle(handle));
+    }
 
     textures_.erase(it);
 }
@@ -1239,13 +1367,13 @@ bool D3D12Backend::BeginFrame(const FrameState& state) {
     if (slot.allocator == nullptr) {
         const HRESULT hr = device_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
                                                             __uuidof(ID3D12CommandAllocator),
-                                                            slot.allocator.GetAddressOf());
+                                                            slot.allocator.GetAddressOfVoid());
         if (FAILED(hr)) { Fail("CreateCommandAllocator", hr); return false; }
     }
     if (slot.list == nullptr) {
         HRESULT hr = device_->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, slot.allocator.Get(),
                                                 nullptr, __uuidof(ID3D12GraphicsCommandList),
-                                                slot.list.GetAddressOf());
+                                                slot.list.GetAddressOfVoid());
         if (FAILED(hr)) { Fail("CreateCommandList", hr); return false; }
         // A freshly created list is in the recording state; close it so it can be
         // Reset() cleanly next frame.
@@ -1406,10 +1534,11 @@ void D3D12Backend::Render(const DrawList& list, const FrameState&) {
         std::memcpy(viewportMapped_, values, sizeof(values));
     }
     cmd->SetGraphicsRootConstantBufferView(0, viewportGpuAddress_);
+    cmd->SetGraphicsRootConstantBufferView(2, samplerGpuAddress_);
 
     // -- Draw --------------------------------------------------------------
     ID3D12PipelineState* boundPipeline = pipelineAlpha_.Get();
-    D3D12_CPU_DESCRIPTOR_HANDLE boundSrv{};
+    D3D12_GPU_DESCRIPTOR_HANDLE boundSrv{};
     bool srvBound = false;
     D3D12_RECT boundScissor{};
     bool scissorBound = false;
@@ -1445,7 +1574,7 @@ void D3D12Backend::Render(const DrawList& list, const FrameState&) {
             boundPipeline = wantPipeline;
         }
 
-        const D3D12_CPU_DESCRIPTOR_HANDLE wantSrv = SrvHandle(drawCmd.textureId);
+        const D3D12_GPU_DESCRIPTOR_HANDLE wantSrv = SrvGpuHandle(drawCmd.textureId);
         if (!srvBound || wantSrv.ptr != boundSrv.ptr) {
             cmd->SetGraphicsRootDescriptorTable(1, wantSrv);
             boundSrv = wantSrv;

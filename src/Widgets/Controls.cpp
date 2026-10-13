@@ -115,7 +115,7 @@ static bool ButtonImpl(const char* label, Icon icon, IconSlot slot, ButtonKind k
     const u32 id = ctx.GetID(label != nullptr ? label : "##button");
     const ButtonColors c = ResolveButton(kind, ctx.GetStyle());
 
-    const f32 fontSize = ctx.Var(StyleVarId::TextSize);
+    const f32 fontSize = ctx.GetVar(StyleVarId::TextSize);
     Font* font = ctx.FontAt(fontSize);
     const bool hasLabel = label != nullptr && *label != '\0';
     const f32 labelW = hasLabel ? TextWidth(font, label) : 0.0f;
@@ -136,8 +136,8 @@ static bool ButtonImpl(const char* label, Icon icon, IconSlot slot, ButtonKind k
         id, bounds, enabled ? ItemFlags::None : ItemFlags::NoInteraction);
     if (hoveredOut != nullptr) *hoveredOut = r.hovered;
 
-    const f32 hover = detail::HoverAnim(ctx, id, r.hovered, ctx.Var(StyleVarId::HoverRate));
-    const f32 press = detail::PressAnim(ctx, id, r.held, ctx.Var(StyleVarId::PressRate));
+    const f32 hover = detail::HoverAnim(ctx, id, r.hovered, ctx.GetVar(StyleVarId::HoverRate));
+    const f32 press = detail::PressAnim(ctx, id, r.held, ctx.GetVar(StyleVarId::PressRate));
 
     const Color bg = ResolveInteractive(c.bg, c.bgHovered, c.bgActive, hover, press);
     const Color border = hover > 0.01f ? c.borderHovered : c.border;
@@ -148,12 +148,12 @@ static bool ButtonImpl(const char* label, Icon icon, IconSlot slot, ButtonKind k
     Color glowColor(0, 0, 0, 0);
     if (kind == ButtonKind::Primary) {
         glow = 2.0f + hover * 5.0f;
-        glowColor = ctx.Color(StyleColorId::Glow);
+        glowColor = ctx.GetColor(StyleColorId::Glow);
     }
 
     ctx.AddBox(bounds, bg, CornerRadius(c.radius), c.borderWidth, border, glow, glowColor);
 
-    const Color fg = enabled ? Color::LerpC(c.fg, ctx.Color(StyleColorId::White), hover * 0.25f)
+    const Color fg = enabled ? Color::LerpC(c.fg, ctx.GetColor(StyleColorId::White), hover * 0.25f)
                              : c.fgDisabled;
 
     if (icon != Icon::None) {
@@ -204,15 +204,15 @@ bool IconButton(Icon icon, const char* tooltip, ButtonKind kind, f32 size, bool 
     const ItemResult r = ctx.ItemBehavior(
         id, bounds, enabled ? ItemFlags::None : ItemFlags::NoInteraction);
 
-    const f32 hover = detail::HoverAnim(ctx, id, r.hovered, ctx.Var(StyleVarId::HoverRate));
-    const f32 press = detail::PressAnim(ctx, id, r.held, ctx.Var(StyleVarId::PressRate));
+    const f32 hover = detail::HoverAnim(ctx, id, r.hovered, ctx.GetVar(StyleVarId::HoverRate));
+    const f32 press = detail::PressAnim(ctx, id, r.held, ctx.GetVar(StyleVarId::PressRate));
     const Color bg = ResolveInteractive(c.bg, c.bgHovered, c.bgActive, hover, press);
 
     ctx.AddBox(bounds, bg, CornerRadius(c.radius));
 
     Color fg = c.fg;
     if (tint != nullptr) fg = *tint;
-    fg = enabled ? Color::LerpC(fg, ctx.Color(StyleColorId::Text), hover) : c.fgDisabled;
+    fg = enabled ? Color::LerpC(fg, ctx.GetColor(StyleColorId::Text), hover) : c.fgDisabled;
 
     const f32 glyph = size * 0.54f;
     const Rect glyphRect(bounds.GetCenter() - Vec2(glyph * 0.5f),
@@ -235,13 +235,13 @@ bool IconButton(Icon icon, const char* tooltip, ButtonKind kind, f32 size, bool 
 bool Checkbox(const char* label, bool* value, bool enabled) {
     Context& ctx = Context::Get();
     const u32 id = ctx.GetID(label != nullptr ? label : "##checkbox");
-    const f32 box = ctx.Var(StyleVarId::CheckboxSize);
-    const f32 radius = ctx.Var(StyleVarId::CheckboxRadius);
+    const f32 box = ctx.GetVar(StyleVarId::CheckboxSize);
+    const f32 radius = ctx.GetVar(StyleVarId::CheckboxRadius);
 
-    Font* font = ctx.FontAt(ctx.Var(StyleVarId::TextSize));
+    Font* font = ctx.FontAt(ctx.GetVar(StyleVarId::TextSize));
     const bool hasLabel = label != nullptr && *label != '\0';
     const f32 labelW = hasLabel ? TextWidth(font, label) : 0.0f;
-    const f32 gap = hasLabel ? ctx.Var(StyleVarId::Gap) : 0.0f;
+    const f32 gap = hasLabel ? ctx.GetVar(StyleVarId::Gap) : 0.0f;
 
     const Rect bounds(ctx.CursorPos(),
                       ctx.CursorPos() + Vec2(box + gap + labelW, box));
@@ -254,25 +254,26 @@ bool Checkbox(const char* label, bool* value, bool enabled) {
     const bool on = (value != nullptr && *value);
     // Snap the tick at 0.62 so it cannot be flickered by a fast double-click.
     const f32 anim = ctx.AnimFloat(id ^ 0x1a2b3c4du, on ? 1.0f : 0.0f,
-                                   ctx.Var(StyleVarId::ToggleRate));
+                                   ctx.GetVar(StyleVarId::ToggleRate));
 
-    const f32 hover = detail::HoverAnim(ctx, id, r.hovered, ctx.Var(StyleVarId::HoverRate));
-    const f32 press = detail::PressAnim(ctx, id, r.held, ctx.Var(StyleVarId::PressRate));
+    const f32 hover = detail::HoverAnim(ctx, id, r.hovered, ctx.GetVar(StyleVarId::HoverRate));
+    const f32 press = detail::PressAnim(ctx, id, r.held, ctx.GetVar(StyleVarId::PressRate));
 
     const Rect boxRect(ctx.CursorPos(), ctx.CursorPos() + Vec2(box, box));
-    const Color accent = ctx.Color(StyleColorId::Accent);
+    const Color accent = ctx.GetColor(StyleColorId::Accent);
     const Color bg = anim > 0.5f
-        ? Color::LerpC(ctx.Color(StyleColorId::FieldBgHover), accent, (anim - 0.5f) * 2.0f)
-        : Color::LerpC(ctx.Color(StyleColorId::FieldBg),
-                       Color::LerpC(ctx.Color(StyleColorId::FieldBgHover), accent, 0.35f), hover);
-    const Color border = Color::LerpC(ctx.Color(StyleColorId::FieldBorder),
+        ? Color::LerpC(ctx.GetColor(StyleColorId::FieldBgHover), accent, (anim - 0.5f) * 2.0f)
+        : Color::LerpC(ctx.GetColor(StyleColorId::FieldBg),
+                       Color::LerpC(ctx.GetColor(StyleColorId::FieldBgHover), accent, 0.35f), hover);
+    const Color border = Color::LerpC(ctx.GetColor(StyleColorId::FieldBorder),
                                       accent, anim * 0.9f);
 
-    ctx.AddBox(boxRect, bg, CornerRadius(radius), 1.0f, border);
+    ctx.AddBox(boxRect, bg.WithAlpha(bg.a * (1.0f - press * 0.18f)), CornerRadius(radius), 1.0f,
+                  border);
 
     // Tick, drawn only once it has room.
     if (anim > 0.02f) {
-        const Color tick = ctx.Color(StyleColorId::OnAccent);
+        const Color tick = ctx.GetColor(StyleColorId::OnAccent);
         const f32 s = box * 0.30f;
         const Vec2 c = boxRect.GetCenter();
         const f32 g = (1.0f - anim) * box * 0.35f;
@@ -283,8 +284,8 @@ bool Checkbox(const char* label, bool* value, bool enabled) {
     }
 
     if (hasLabel) {
-        const Color fg = enabled ? ctx.Color(StyleColorId::Text)
-                                 : ctx.Color(StyleColorId::TextDisabled);
+        const Color fg = enabled ? ctx.GetColor(StyleColorId::Text)
+                                 : ctx.GetColor(StyleColorId::TextDisabled);
         DrawLabel(ctx, Rect(boxRect.max.x + gap, bounds.min.y, bounds.max.x, bounds.max.y),
                   label, font, fg, TextAlign::Left);
     }
@@ -303,10 +304,10 @@ bool Checkbox(const char* label, bool* value, bool enabled) {
 bool ToggleSwitch(bool* value, bool enabled, f32 widthIn, f32 heightIn) {
     Context& ctx = Context::Get();
     const u32 id = ctx.GetID("##toggle");
-    const f32 w = widthIn > 0.0f ? widthIn : ctx.Var(StyleVarId::ToggleWidth);
-    const f32 h = heightIn > 0.0f ? heightIn : ctx.Var(StyleVarId::ToggleHeight);
+    const f32 w = widthIn > 0.0f ? widthIn : ctx.GetVar(StyleVarId::ToggleWidth);
+    const f32 h = heightIn > 0.0f ? heightIn : ctx.GetVar(StyleVarId::ToggleHeight);
     const f32 radius = h * 0.5f;
-    const f32 knobR = h * 0.5f - ctx.Var(StyleVarId::ToggleKnobRadius) * 0.0f - 2.0f;
+    const f32 knobR = h * 0.5f - ctx.GetVar(StyleVarId::ToggleKnobRadius) * 0.0f - 2.0f;
 
     const Rect bounds(ctx.CursorPos(), ctx.CursorPos() + Vec2(w, h));
 
@@ -317,13 +318,13 @@ bool ToggleSwitch(bool* value, bool enabled, f32 widthIn, f32 heightIn) {
 
     const bool on = (value != nullptr && *value);
     const f32 anim = ctx.AnimFloat(id ^ 0x77aa11u, on ? 1.0f : 0.0f,
-                                   ctx.Var(StyleVarId::ToggleRate));
-    const f32 hover = detail::HoverAnim(ctx, id, r.hovered, ctx.Var(StyleVarId::HoverRate));
-    const f32 press = detail::PressAnim(ctx, id, r.held, ctx.Var(StyleVarId::PressRate));
+                                   ctx.GetVar(StyleVarId::ToggleRate));
+    const f32 hover = detail::HoverAnim(ctx, id, r.hovered, ctx.GetVar(StyleVarId::HoverRate));
+    const f32 press = detail::PressAnim(ctx, id, r.held, ctx.GetVar(StyleVarId::PressRate));
 
-    const Color trackOff = Color::LerpC(ctx.Color(StyleColorId::Track),
-                                         ctx.Color(StyleColorId::TrackHover), hover);
-    const Color track = Color::LerpC(trackOff, ctx.Color(StyleColorId::Accent), anim);
+    const Color trackOff = Color::LerpC(ctx.GetColor(StyleColorId::Track),
+                                         ctx.GetColor(StyleColorId::TrackHover), hover);
+    const Color track = Color::LerpC(trackOff, ctx.GetColor(StyleColorId::Accent), anim);
 
     // Pressing nudges the whole track; it reads as physical without moving the
     // knob, which stays on its animated position.
@@ -339,8 +340,8 @@ bool ToggleSwitch(bool* value, bool enabled, f32 widthIn, f32 heightIn) {
     const Rect knobRect(kc.x - knobR, kc.y - knobR, kc.x + knobR, kc.y + knobR);
 
     const Color knob = enabled
-        ? Color::LerpC(ctx.Color(StyleColorId::Thumb), ctx.Color(StyleColorId::White), 0.0f)
-        : ctx.Color(StyleColorId::TextDisabled);
+        ? Color::LerpC(ctx.GetColor(StyleColorId::Thumb), ctx.GetColor(StyleColorId::White), 0.0f)
+        : ctx.GetColor(StyleColorId::TextDisabled);
     ctx.AddBox(knobRect, knob, CornerRadius(knobR));
 
     if (!enabled) ctx.PopStyleVar(1);
@@ -362,7 +363,7 @@ bool SliderImpl(const char* label, f32* value, f32 vmin, f32 vmax, const char* f
     const u32 id = ctx.GetID(label != nullptr ? label : "##slider");
     const u32 idAnim = id ^ 0x2f81a3u;
 
-    Font* font = ctx.FontAt(ctx.Var(StyleVarId::TextSizeSmall));
+    Font* font = ctx.FontAt(ctx.GetVar(StyleVarId::TextSizeSmall));
     const bool hasLabel = label != nullptr && *label != '\0';
 
     char valueBuf[64];
@@ -372,14 +373,14 @@ bool SliderImpl(const char* label, f32* value, f32 vmin, f32 vmax, const char* f
         valueBuf[0] = '\0';
     }
     const f32 valueW = valueBuf[0] != '\0' ? TextWidth(font, valueBuf) : 0.0f;
-    const f32 labelW = hasLabel ? TextWidth(ctx.FontAt(ctx.Var(StyleVarId::TextSize)), label) : 0.0f;
+    const f32 labelW = hasLabel ? TextWidth(ctx.FontAt(ctx.GetVar(StyleVarId::TextSize)), label) : 0.0f;
 
     const f32 trackW = vertical ? 0.0f : 8.0f;
     const f32 totalW = vertical
-        ? ctx.Var(StyleVarId::SliderHeight)
-        : (labelW > 0.0f ? labelW + ctx.Var(StyleVarId::GapLargeX) : 0.0f) + trackW +
-              (valueW > 0.0f ? valueW + ctx.Var(StyleVarId::Gap) : 0.0f);
-    const f32 totalH = vertical ? fixedHeight : ctx.Var(StyleVarId::SliderHeight);
+        ? ctx.GetVar(StyleVarId::SliderHeight)
+        : (labelW > 0.0f ? labelW + ctx.GetVar(StyleVarId::GapLargeX) : 0.0f) + trackW +
+              (valueW > 0.0f ? valueW + ctx.GetVar(StyleVarId::Gap) : 0.0f);
+    const f32 totalH = vertical ? fixedHeight : ctx.GetVar(StyleVarId::SliderHeight);
 
     const Rect bounds(ctx.CursorPos(), ctx.CursorPos() + Vec2(totalW, totalH));
 
@@ -387,14 +388,14 @@ bool SliderImpl(const char* label, f32* value, f32 vmin, f32 vmax, const char* f
     // the label's optical height.
     Rect trackRect = bounds;
     if (!vertical) {
-        trackRect.min.x = labelW > 0.0f ? bounds.min.x + labelW + ctx.Var(StyleVarId::GapLargeX)
+        trackRect.min.x = labelW > 0.0f ? bounds.min.x + labelW + ctx.GetVar(StyleVarId::GapLargeX)
                                         : bounds.min.x;
-        trackRect.max.x = valueW > 0.0f ? bounds.max.x - valueW - ctx.Var(StyleVarId::Gap)
+        trackRect.max.x = valueW > 0.0f ? bounds.max.x - valueW - ctx.GetVar(StyleVarId::Gap)
                                         : bounds.max.x;
-        trackRect.min.y = bounds.min.y + (bounds.Height() - ctx.Var(StyleVarId::SliderHeight)) * 0.5f;
-        trackRect.max.y = trackRect.min.y + ctx.Var(StyleVarId::SliderHeight);
+        trackRect.min.y = bounds.min.y + (bounds.Height() - ctx.GetVar(StyleVarId::SliderHeight)) * 0.5f;
+        trackRect.max.y = trackRect.min.y + ctx.GetVar(StyleVarId::SliderHeight);
     } else {
-        trackRect.max.x = bounds.min.x + ctx.Var(StyleVarId::SliderHeight);
+        trackRect.max.x = bounds.min.x + ctx.GetVar(StyleVarId::SliderHeight);
         trackRect.min.y = bounds.min.y;
         trackRect.max.y = bounds.max.y;
     }
@@ -404,14 +405,14 @@ bool SliderImpl(const char* label, f32* value, f32 vmin, f32 vmax, const char* f
     t = Clamp01(t);
 
     // Smooth the displayed position so a keyboard step is not a jump.
-    const f32 tSmooth = ctx.AnimFloat(idAnim, t, ctx.Var(StyleVarId::ScrollRate));
+    const f32 tSmooth = ctx.AnimFloat(idAnim, t, ctx.GetVar(StyleVarId::ScrollRate));
 
     const Rect hitRect = vertical
-        ? Rect(bounds.min.x, bounds.min.y, bounds.min.x + ctx.Var(StyleVarId::SliderHeight) * 2.0f,
+        ? Rect(bounds.min.x, bounds.min.y, bounds.min.x + ctx.GetVar(StyleVarId::SliderHeight) * 2.0f,
                bounds.max.y)
-        : Rect(trackRect.min.x - ctx.Var(StyleVarId::SliderThumbRadius),
+        : Rect(trackRect.min.x - ctx.GetVar(StyleVarId::SliderThumbRadius),
                bounds.min.y - 2.0f,
-               trackRect.max.x + ctx.Var(StyleVarId::SliderThumbRadius), bounds.max.y + 2.0f);
+               trackRect.max.x + ctx.GetVar(StyleVarId::SliderThumbRadius), bounds.max.y + 2.0f);
 
     if (!enabled) ctx.PushStyleVar(StyleVarId::Alpha, ctx.Alpha() * 0.5f);
 
@@ -434,53 +435,53 @@ bool SliderImpl(const char* label, f32* value, f32 vmin, f32 vmax, const char* f
         }
     }
 
-    const f32 hover = detail::HoverAnim(ctx, id, r.hovered, ctx.Var(StyleVarId::HoverRate));
-    const f32 press = detail::PressAnim(ctx, id, r.held, ctx.Var(StyleVarId::PressRate));
+    const f32 hover = detail::HoverAnim(ctx, id, r.hovered, ctx.GetVar(StyleVarId::HoverRate));
+    const f32 press = detail::PressAnim(ctx, id, r.held, ctx.GetVar(StyleVarId::PressRate));
 
-    const f32 railT = ctx.Var(StyleVarId::SliderRailThickness);
-    const f32 thumbR = ctx.Var(StyleVarId::SliderThumbRadius) + press * 0.8f;
+    const f32 railT = ctx.GetVar(StyleVarId::SliderRailThickness);
+    const f32 thumbR = ctx.GetVar(StyleVarId::SliderThumbRadius) + press * 0.8f;
 
     // Rail (unfilled) and fill.
     if (vertical) {
         const f32 cx = trackRect.GetCenter().x;
         const f32 x0 = cx - railT * 0.5f, x1 = cx + railT * 0.5f;
         ctx.AddBox(Rect(x0, trackRect.min.y, x1, trackRect.max.y),
-                   ctx.Color(StyleColorId::SliderRail), CornerRadius(railT * 0.5f));
+                   ctx.GetColor(StyleColorId::SliderRail), CornerRadius(railT * 0.5f));
         const f32 fillTop = trackRect.max.y - trackRect.Height() * tSmooth;
         ctx.AddBox(Rect(x0, fillTop, x1, trackRect.max.y),
-                   Color::LerpC(ctx.Color(StyleColorId::Accent), ctx.Color(StyleColorId::AccentHover),
+                   Color::LerpC(ctx.GetColor(StyleColorId::Accent), ctx.GetColor(StyleColorId::AccentHover),
                                 hover),
                    CornerRadius(railT * 0.5f));
         const f32 ty = fillTop;
         const Rect thumb(cx - thumbR, ty - thumbR, cx + thumbR, ty + thumbR);
-        ctx.AddBox(thumb, ctx.Color(StyleColorId::Thumb), CornerRadius(thumbR));
+        ctx.AddBox(thumb, ctx.GetColor(StyleColorId::Thumb), CornerRadius(thumbR));
     } else {
         const f32 cy = trackRect.GetCenter().y;
         const f32 y0 = cy - railT * 0.5f, y1 = cy + railT * 0.5f;
         ctx.AddBox(Rect(trackRect.min.x, y0, trackRect.max.x, y1),
-                   ctx.Color(StyleColorId::SliderRail), CornerRadius(railT * 0.5f));
+                   ctx.GetColor(StyleColorId::SliderRail), CornerRadius(railT * 0.5f));
         const f32 fillX = trackRect.min.x + trackRect.Width() * tSmooth;
         ctx.AddBox(Rect(trackRect.min.x, y0, Max(fillX, trackRect.min.x + railT), y1),
-                   Color::LerpC(ctx.Color(StyleColorId::Accent), ctx.Color(StyleColorId::AccentHover),
+                   Color::LerpC(ctx.GetColor(StyleColorId::Accent), ctx.GetColor(StyleColorId::AccentHover),
                                 hover),
                    CornerRadius(railT * 0.5f));
         const Rect thumb(fillX - thumbR, cy - thumbR, fillX + thumbR, cy + thumbR);
         // The thumb gets an accent halo while dragging, so it reads as grabbable.
         const f32 glow = press * 4.0f;
-        ctx.AddBox(thumb, ctx.Color(StyleColorId::Thumb), CornerRadius(thumbR), 0.0f,
-                   ctx.Color(StyleColorId::Thumb), glow, ctx.Color(StyleColorId::Glow));
+        ctx.AddBox(thumb, ctx.GetColor(StyleColorId::Thumb), CornerRadius(thumbR), 0.0f,
+                   ctx.GetColor(StyleColorId::Thumb), glow, ctx.GetColor(StyleColorId::Glow));
     }
 
     if (hasLabel) {
-        Font* labelFont = ctx.FontAt(ctx.Var(StyleVarId::TextSize));
-        const Color fg = enabled ? ctx.Color(StyleColorId::Text)
-                                 : ctx.Color(StyleColorId::TextDisabled);
+        Font* labelFont = ctx.FontAt(ctx.GetVar(StyleVarId::TextSize));
+        const Color fg = enabled ? ctx.GetColor(StyleColorId::Text)
+                                 : ctx.GetColor(StyleColorId::TextDisabled);
         DrawLabel(ctx, Rect(bounds.min.x, bounds.min.y, bounds.min.x + labelW, bounds.max.y),
                   label, labelFont, fg, TextAlign::Left);
     }
     if (valueBuf[0] != '\0') {
-        const Color fg = enabled ? ctx.Color(StyleColorId::TextDim)
-                                 : ctx.Color(StyleColorId::TextDisabled);
+        const Color fg = enabled ? ctx.GetColor(StyleColorId::TextDim)
+                                 : ctx.GetColor(StyleColorId::TextDisabled);
         DrawLabel(ctx, Rect(bounds.max.x - valueW, bounds.min.y, bounds.max.x, bounds.max.y),
                   valueBuf, font, fg, TextAlign::Right);
     }

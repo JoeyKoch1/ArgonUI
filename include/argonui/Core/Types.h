@@ -29,6 +29,8 @@ struct Vec2 {
 
     constexpr Vec2() = default;
     constexpr Vec2(f32 vx, f32 vy) : x(vx), y(vy) {}
+    /// Scalar splat, for half-extents: Vec2(radius * 0.5f).
+    constexpr Vec2(f32 v) : x(v), y(v) {}
 
     constexpr Vec2 operator+(const Vec2& o) const { return {x + o.x, y + o.y}; }
     constexpr Vec2 operator-(const Vec2& o) const { return {x - o.x, y - o.y}; }
@@ -43,6 +45,12 @@ struct Vec2 {
 
     constexpr bool operator==(const Vec2& o) const { return x == o.x && y == o.y; }
     constexpr bool operator!=(const Vec2& o) const { return !(*this == o); }
+
+    f32 LengthSq() const { return x * x + y * y; }
+    f32 Length() const { return std::sqrt(x * x + y * y); }
+
+    /// Component-wise absolute value, for building min/max corners.
+    constexpr Vec2 Abs() const { return {x < 0.0f ? -x : x, y < 0.0f ? -y : y}; }
 };
 
 inline constexpr Vec2 operator*(f32 s, const Vec2& v) { return {v.x * s, v.y * s}; }

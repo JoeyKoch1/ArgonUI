@@ -10,6 +10,8 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
+// GET_X_LPARAM / GET_Y_LPARAM live here, not in windows.h.
+#include <windowsx.h>
 
 #include <string>
 #include <vector>

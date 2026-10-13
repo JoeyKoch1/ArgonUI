@@ -13,16 +13,18 @@
 
 namespace argon::ui {
 /// Interaction-aware colour set. Widgets pick the entry matching their state.
+/// The parameters are prefixed because `hovered`, `active` and `disabled` are
+/// also member names, and an unprefixed `return disabled;` returns the bool.
 struct StateColors {
     Color normal;
     Color hovered;
     Color active;
     Color disabled;
 
-    Color For(bool hovered, bool active, bool disabled) const {
-        if (disabled) return disabled;
-        if (active) return active;
-        if (hovered) return hovered;
+    Color For(bool isHovered, bool isActive, bool isDisabled) const {
+        if (isDisabled) return disabled;
+        if (isActive) return active;
+        if (isHovered) return hovered;
         return normal;
     }
 };
@@ -47,7 +49,7 @@ struct ButtonVariant {
 
 struct Palette {
     // Surfaces.
-    Color windowBg{Color::Hex(0x0B0C0Eu), 0.98f};
+    Color windowBg{Color::Hex(0x0B0C0Eu, 0.98f)};
     Color windowBorder{Color::Hex(0x23262Bu)};
     Color sidebarBg{Color::Hex(0x101216u)};
     Color titleBarBg{Color::Hex(0x0E1013u)};
@@ -66,7 +68,7 @@ struct Palette {
     Color accent{Color::Hex(0xA3E635u)};
     Color accentHover{Color::Hex(0xB4F04Du)};
     Color accentPressed{Color::Hex(0x8CC72Bu)};
-    Color accentSoft{Color::Hex(0xA3E635u), 0.16f};
+    Color accentSoft{Color::Hex(0xA3E635u, 0.16f)};
     Color onAccent{Color::Hex(0x10150Au)};
 
     // Text.
@@ -76,7 +78,7 @@ struct Palette {
     Color textDisabled{Color::Hex(0x454B54u)};
     Color textOnAccentDark{Color::Hex(0x1B2400u)};
     Color danger{Color::Hex(0xF2555Au)};
-    Color dangerSoft{Color::Hex(0xF2555Au), 0.16f};
+    Color dangerSoft{Color::Hex(0xF2555Au, 0.16f)};
     Color warning{Color::Hex(0xF5B94Cu)};
     Color success{Color::Hex(0x4ADE80u)};
     Color info{Color::Hex(0x60A5FAu)};
@@ -89,12 +91,12 @@ struct Palette {
     Color sliderRail{Color::Hex(0x2A2E35u)};
     Color scrollbar{Color::Hex(0x4A5059u)};
     Color scrollbarHover{Color::Hex(0x656C77u)};
-    Color selection{Color::Hex(0xA3E635u), 0.20f};
+    Color selection{Color::Hex(0xA3E635u, 0.20f)};
 
     // Effects.
-    Color shadow{Color::Hex(0x000000u), 0.55f};
-    Color glow{Color::Hex(0xA3E635u), 0.35f};
-    Color backdrop{Color::Hex(0x000000u), 0.62f};
+    Color shadow{Color::Hex(0x000000u, 0.55f)};
+    Color glow{Color::Hex(0xA3E635u, 0.35f)};
+    Color backdrop{Color::Hex(0x000000u, 0.62f)};
     Color white{Color(1, 1, 1, 1)};
     Color transparent{Color(0, 0, 0, 0)};
 };

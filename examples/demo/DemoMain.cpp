@@ -95,6 +95,11 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int) {
         io.ClearAll();
         host.UpdateInput(io);
 
+        // The Context reads its own copy of the input state, so hand it over
+        // before NewFrame. Filling io without this leaves the menu with no
+        // pointer, no keys and no clicks.
+        ctx.SetInput(io);
+
         FrameState fs;
         fs.frameIndex = ++frameIndex;
         fs.deltaTime = dt;

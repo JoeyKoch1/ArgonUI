@@ -12,8 +12,10 @@ void Style::Reset(const Theme& theme) {
     varStack_.clear();
 
     // Start every colour at fully transparent; SetColor below fills them.
-    std::memset(colors_, 0, sizeof(colors_));
-    std::memset(vars_, 0, sizeof(vars_));
+    // Assigned rather than memset: Color is a class, not a POD, so clearing
+    // its bytes would be skipping the constructor.
+    for (Color& c : colors_) c = Color();
+    for (f32& v : vars_) v = 0.0f;
 
     const Palette& c = theme_.colors;
     const Metrics& m = theme_.metrics;
@@ -174,9 +176,6 @@ void Style::Reset(const Theme& theme) {
     var(StyleVarId::TextSizeTitle, FontManager::kSizeTitle);
     var(StyleVarId::TextSizeDisplay, FontManager::kSizeDisplay);
 }
-
-Color Style::GetColor(StyleColorId id) const { return colors_[static_cast<int>(id)]; }
-f32 Style::GetVar(StyleVarId id) const { return vars_[static_cast<int>(id)]; }
 
 void Style::SetColor(StyleColorId id, const Color& c) { colors_[static_cast<int>(id)] = c; }
 void Style::SetVar(StyleVarId id, f32 v) { vars_[static_cast<int>(id)] = v; }

@@ -62,8 +62,19 @@ VSOut VSMain(VSIn input) {
     return o;
 }
 
-Texture2D    gTexture;
-SamplerState gSampler;
+Texture2D gTexture;
+
+// The sampler rides in a constant buffer rather than a static root signature
+// sampler. A static sampler needs D3D12_ROOT_SIGNATURE_VERSION_1_1 and a header
+// that declares D3D12_ROOT_PARAMETER_TYPE_STATIC_SAMPLER, which several dxgi /
+// d3d12 header sets still do not. A CBV works on every version of the API.
+//
+// The cost is that the sampler is fixed at pipeline-creation time, so
+// TextureDesc::filterLinear and ::repeat are not honoured - the same
+// simplification the D3D11 backend makes with one shared sampler state.
+cbuffer ArgonSamplerCB : register(b1) {
+    SamplerState gSampler;
+};
 
 #define ARGON_VF_GRADIENT_V      1u
 #define ARGON_VF_GRADIENT_H      2u

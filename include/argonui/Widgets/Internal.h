@@ -2,6 +2,8 @@
 // Helpers shared by the widget implementations. Not part of the public API.
 #pragma once
 
+#include <cstring>
+
 #include "../Context.h"
 
 namespace argon::ui::detail {
@@ -31,7 +33,7 @@ inline Color WithAlpha(const Color& c, f32 extra = 1.0f) {
 }
 
 /// Width of the text, with an ellipsis, clipped to `maxWidth`.
-inline f32 EllipsizeWidth(Context& ctx, Font* font, const char* text, f32 maxWidth) {
+inline f32 EllipsizeWidth(Font* font, const char* text, f32 maxWidth) {
     if (font == nullptr || text == nullptr) return 0.0f;
     const size_t n = font->Ellipsize(text, std::strlen(text), maxWidth);
     return font->MeasureLine(text, n);

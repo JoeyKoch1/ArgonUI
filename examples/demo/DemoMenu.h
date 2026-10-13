@@ -4,6 +4,11 @@
 #include "argonui/ArgonUI.h"
 
 namespace argondemo {
+// The demo talks to ArgonUI with unqualified names (Row, Icon, StyleColorId),
+// so pull them in here too. Header order matters: this has to come after the
+// include above, and DemoMenu.cpp relies on this one rather than repeating it.
+using namespace argon::ui;
+
 /// All demo state. Kept in one place so the whole menu is data-driven and the
 /// widget code stays readable.
 struct MenuState {

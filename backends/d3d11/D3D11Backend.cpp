@@ -14,10 +14,6 @@ namespace argon::ui {
 namespace {
 constexpr const char* kTag = "D3D11";
 
-/// Slots reserved for context save/restore when drawing into a device we do not
-/// own. A typical engine touches a few dozen; 2048 is a generous ceiling.
-constexpr size_t kContextStateSlots = 2048;
-
 const char* HResultName(HRESULT hr) {
     switch (hr) {
     case S_OK:                            return "S_OK";
@@ -69,10 +65,6 @@ bool D3D11Backend::Initialize(const DeviceDesc& desc) {
     windowHandle_ = desc.windowHandle;
     syncInterval_ = desc.enableVsync ? 1u : 0u;
 
-    // When we render into somebody else's device we must not leave our state
-    // behind; that is the default expectation for an overlay.
-    preserveContextState_ = (desc.deviceSource == DeviceSource::External);
-
     if (desc.deviceSource == DeviceSource::External) {
         if (desc.externalDevice == nullptr || desc.externalContext == nullptr) {
             lastError_ = "External device source requires externalDevice and externalContext";
@@ -89,7 +81,7 @@ bool D3D11Backend::Initialize(const DeviceDesc& desc) {
             D3D_FEATURE_LEVEL_10_0, D3D_FEATURE_LEVEL_9_3
         };
         D3D_FEATURE_LEVEL obtained = D3D_FEATURE_LEVEL_11_0;
-        UINT flags = desc.enableValidation ? D3D11_CREATE_DEVICE_DEBUG : 0u;
+        UINT flags = desc.enableValidation ? static_cast<UINT>(D3D11_CREATE_DEVICE_DEBUG) : 0u;
 
         HRESULT hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, flags, kLevels,
                                        ARRAYSIZE(kLevels), D3D11_SDK_VERSION, &device_, &obtained,
@@ -124,19 +116,14 @@ bool D3D11Backend::Initialize(const DeviceDesc& desc) {
                                         static_cast<int>(sizeof(nameBuf)), nullptr, nullptr) > 0) {
                     info_.deviceName = nameBuf;
                 }
-                static thread_local char verBuf[128];
-                std::snprintf(verBuf, sizeof(verBuf), "%u.%u.%u.%u",
-                              HIWORD(ad.DriverVersion), LOWORD(ad.DriverVersion),
-                              HIWORD(ad.DriverVersion), LOWORD(ad.DriverVersion));
-                (void)verBuf;
+                // DXGI_ADAPTER_DESC has no DriverVersion; DXGI_ADAPTER_DESC1 does,
+                // but that needs IDXGIAdapter1, which not every header set declares.
+                // Leaving info_.driverVersion empty is better than reporting a
+                // number invented from Revision.
             }
             if (adapter != nullptr) adapter->Release();
         }
         if (dxgiDevice != nullptr) dxgiDevice->Release();
-    }
-
-    if (preserveContextState_) {
-        contextStateCache_.resize(kContextStateSlots);
     }
 
     if (!CompileShaders()) return false;
@@ -205,7 +192,10 @@ bool D3D11Backend::CreatePipeline() {
     // Premultiplied alpha: the shader returns rgb * a, so the blend is
     // (ONE, ONE_MINUS_SRC_ALPHA). Matches the reference UIs exactly.
     D3D11_BLEND_DESC bd{};
-    bd.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+    // On the per-target struct, not the flat D3D11_BLEND_DESC: the flat form
+    // only grew RenderTargetWriteMask in the Win8 SDK, so older header sets
+    // reject it. Leaving it zero writes no colour channel at all.
+    bd.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
     bd.RenderTarget[0].BlendEnable = TRUE;
     bd.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
     bd.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
@@ -263,9 +253,20 @@ bool D3D11Backend::CreateStaticResources() {
 // Target
 
 bool D3D11Backend::CreateSwapchainForWindow(const TargetDesc& desc, u32 width, u32 height) {
-    IDXGIFactory2* factory = nullptr;
-    HRESULT hr = CreateDXGIFactory2(0, &factory);
-    if (FAILED(hr) || factory == nullptr) { Fail("CreateDXGIFactory2", hr); return false; }
+    // CreateDXGIFactory1 rather than CreateDXGIFactory2: the only difference is
+    // a factory creation flag we do not need, and 2 is not declared by every
+    // dxgi header in circulation.
+    IDXGIFactory1* factory = nullptr;
+    HRESULT hr = CreateDXGIFactory1(__uuidof(IDXGIFactory1), reinterpret_cast<void**>(&factory));
+    if (FAILED(hr) || factory == nullptr) { Fail("CreateDXGIFactory1", hr); return false; }
+
+    IDXGIFactory2* factory2 = nullptr;
+    hr = factory->QueryInterface(__uuidof(IDXGIFactory2), reinterpret_cast<void**>(&factory2));
+    if (FAILED(hr) || factory2 == nullptr) {
+        factory->Release();
+        Fail("QueryInterface(IDXGIFactory2)", hr);
+        return false;
+    }
 
     DXGI_SWAP_CHAIN_DESC1 sd{};
     sd.Width = width;
@@ -281,16 +282,20 @@ bool D3D11Backend::CreateSwapchainForWindow(const TargetDesc& desc, u32 width, u
     sd.AlphaMode = transparentBackground_ ? DXGI_ALPHA_MODE_PREMULTIPLIED : DXGI_ALPHA_MODE_IGNORE;
 
     IDXGISwapChain1* chain = nullptr;
-    hr = factory->CreateSwapChainForHwnd(context_, &sd, nullptr, nullptr, &chain);
+    // Argument order is (device, hwnd, desc, fullscreenDesc, restrictToOutput,
+    // out). The HWND is second, not third.
+    hr = factory2->CreateSwapChainForHwnd(context_, reinterpret_cast<HWND>(windowHandle_),
+                                          &sd, nullptr, nullptr, &chain);
+    if (SUCCEEDED(hr)) {
+        // Keep Alt+Enter from toggling fullscreen behind the host's back. This
+        // has to go through IDXGIFactory2; the IDXGIFactory1 overload takes a
+        // bare flags word and shares the name.
+        factory2->MakeWindowAssociation(reinterpret_cast<HWND>(windowHandle_),
+                                        2 /* DXGI_MWA_NO_ALT_ENTER */);
+    }
+    factory2->Release();
     factory->Release();
     if (FAILED(hr) || chain == nullptr) { Fail("CreateSwapChainForHwnd", hr); return false; }
-
-    // Keep Alt+Enter from toggling fullscreen behind the host's back.
-    factory = nullptr;
-    if (SUCCEEDED(CreateDXGIFactory2(0, &factory)) && factory != nullptr) {
-        factory->MakeWindowAssociation(reinterpret_cast<HWND>(windowHandle_), 2 /* DXGI_MWA_NO_ALT_ENTER */);
-        factory->Release();
-    }
 
     swapChain_ = chain;
     ownsSwapchain_ = true;
@@ -374,14 +379,14 @@ bool D3D11Backend::ResizeTarget(u32 width, u32 height) {
     if (width == targetWidth_ && height == targetHeight_) return true;
 
     // Every back-buffer reference must be gone or ResizeBuffers returns
-    // DXGI_ERROR_INVALIDCALL, which is the usual cause of a black overlay.
+    // DXGI_ERROR_INVALID_CALL, which is the usual cause of a black overlay.
     if (rtv_ != nullptr) { rtv_->Release(); rtv_ = nullptr; }
     if (backBuffer_ != nullptr) { backBuffer_->Release(); backBuffer_ = nullptr; }
 
     const HRESULT hr = swapChain_->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0);
     if (FAILED(hr)) {
         Fail("IDXGISwapChain::ResizeBuffers", hr);
-        if (hr == DXGI_ERROR_INVALIDCALL) {
+        if (hr == DXGI_ERROR_INVALID_CALL) {
             lastError_ += " - a back-buffer reference is still held somewhere";
         }
         return false;
@@ -537,12 +542,11 @@ bool D3D11Backend::BeginFrame(const FrameState& state) {
     frameBegun_ = true;
     drawCallCount_ = 0;
 
-    if (preserveContextState_ && !contextStateCache_.empty()) {
-        UINT count = static_cast<UINT>(contextStateCache_.size());
-        context_->GetState(contextStateCache_.data(),
-                           static_cast<UINT>(contextStateCache_.size() * sizeof(D3D11_CONTEXT_STATE)),
-                           &count);
-    }
+    // No state snapshot here. Render() rebinds the whole pipeline it needs
+    // (rasterizer, blend, depth, shaders, layout, buffers, sampler, viewport),
+    // so there is nothing to restore afterwards, and a host that is drawing its
+    // own frame re-binds its own state anyway. ID3D11DeviceContext::GetState
+    // would flush the pipeline to do it, on every frame, for nothing.
     return true;
 }
 
@@ -573,7 +577,6 @@ void D3D11Backend::Render(const DrawList& list, const FrameState&) {
     context_->OMSetRenderTargets(1, &rtv, nullptr);
     context_->RSSetState(rasterizer_);
     context_->OMSetDepthStencilState(depthState_, 0);
-    context_->GSSetState(nullptr);
 
     D3D11_VIEWPORT vp{};
     vp.Width = static_cast<f32>(targetWidth_);
@@ -636,11 +639,12 @@ void D3D11Backend::Render(const DrawList& list, const FrameState&) {
 
         // Scissor: clamp the CPU-side clip to the target, floor/ceil so partial
         // pixel coverage is never cut off.
+        // floor/ceil return double; a D3D RECT wants whole pixels.
         RECT scissor{};
-        const f32 l = Max(0.0f, floor(cmd.clip.min.x));
-        const f32 t = Max(0.0f, floor(cmd.clip.min.y));
-        const f32 r = Min(static_cast<f32>(targetWidth_), ceil(cmd.clip.max.x));
-        const f32 b = Min(static_cast<f32>(targetHeight_), ceil(cmd.clip.max.y));
+        const f32 l = Max(0.0f, static_cast<f32>(std::floor(cmd.clip.min.x)));
+        const f32 t = Max(0.0f, static_cast<f32>(std::floor(cmd.clip.min.y)));
+        const f32 r = Min(static_cast<f32>(targetWidth_), static_cast<f32>(std::ceil(cmd.clip.max.x)));
+        const f32 b = Min(static_cast<f32>(targetHeight_), static_cast<f32>(std::ceil(cmd.clip.max.y)));
         scissor.left = static_cast<LONG>(l);
         scissor.top = static_cast<LONG>(t);
         scissor.right = static_cast<LONG>(Max(l + 1.0f, r));
@@ -682,18 +686,16 @@ bool D3D11Backend::Present() {
 void D3D11Backend::EndFrame() {
     if (!frameBegun_) return;
 
-    if (preserveContextState_ && !contextStateCache_.empty()) {
-        UINT count = static_cast<UINT>(contextStateCache_.size());
-        context_->SetState(contextStateCache_.data(),
-                           static_cast<UINT>(contextStateCache_.size() * sizeof(D3D11_CONTEXT_STATE)),
-                           &count);
-    } else {
-        // Unbind so an adopted swapchain is left in a predictable state.
-        static ID3D11ShaderResourceView* const nullSrv[1] = {nullptr};
-        static ID3D11SamplerState* const nullSampler[1] = {nullptr};
-        context_->PSSetShaderResources(0, 1, nullSrv);
-        context_->PSSetSamplers(0, 1, nullSampler);
-    }
+    // Leave the device clean. When ArgonUI owns the swapchain the next
+    // BeginFrame resets this anyway; when it does not, the host gets back a
+    // context with no stale shader resource bound to slot 0, which is the
+    // surprise that shows up as a black or garbage frame in someone else's
+    // renderer.
+    static ID3D11ShaderResourceView* const nullSrv[1] = {nullptr};
+    static ID3D11SamplerState* const nullSampler[1] = {nullptr};
+    context_->PSSetShaderResources(0, 1, nullSrv);
+    context_->PSSetSamplers(0, 1, nullSampler);
+
     frameBegun_ = false;
 }
 
@@ -734,7 +736,6 @@ void D3D11Backend::Shutdown() {
     context_ = nullptr;
     device_ = nullptr;
     ownsDevice_ = false;
-    contextStateCache_.clear();
     frameBegun_ = false;
 }
 

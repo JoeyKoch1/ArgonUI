@@ -80,7 +80,6 @@ private:
 
     bool ownsDevice_ = false;
     bool ownsSwapchain_ = false;
-    bool preserveContextState_ = false;
     bool transparentBackground_ = false;
     void* windowHandle_ = nullptr;
     UINT syncInterval_ = 1;
@@ -118,7 +117,7 @@ private:
     // -- Frame -------------------------------------------------------------
     bool frameBegun_ = false;
     u32 drawCallCount_ = 0;
-    std::vector<D3D11_CONTEXT_STATE> contextStateCache_;
+
 
     BackendInfo info_{};
     std::string lastError_;

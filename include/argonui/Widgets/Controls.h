@@ -126,11 +126,18 @@ struct RowOptions {
 bool Row(Context& ctx, const char* label, const RowOptions& options,
          bool (*drawControl)(Context&, const Rect&, void* userData), void* userData = nullptr);
 
-/// Convenience wrappers that place the most common controls in a Row.
-bool RowToggle(const char* label, bool* value, bool enabled = true);
+/// Convenience wrappers that place the most common controls in a Row. Each one
+/// reaches for the current Context via Context::Get(), so a menu body can be
+/// written without threading `ctx` through every line.
+///
+/// `icon` sits ahead of `enabled` so the common call is
+/// `RowToggle("Chams", &on, Icon::Layers)` rather than one that spells out a
+/// `true` first.
+bool RowToggle(const char* label, bool* value, Icon icon = Icon::None, bool enabled = true);
 bool RowSlider(const char* label, f32* value, f32 vmin, f32 vmax, const char* fmt = "%.2f",
-               bool enabled = true);
-bool RowCombo(const char* id, const char* const* options, int count, int* selected);
+               Icon icon = Icon::None, bool enabled = true);
+bool RowCombo(const char* label, const char* const* options, int count, int* selected,
+              Icon icon = Icon::None);
 bool RowButton(const char* label, const char* buttonLabel, ButtonKind kind = ButtonKind::Secondary,
                Icon icon = Icon::None, IconSlot slot = IconSlot::Left);
 

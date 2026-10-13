@@ -75,7 +75,7 @@ Theme Theme::Midnight() {
     t.colors.sidebarBg = Color::Hex(0x0B0D10u);
     t.colors.titleBarBg = Color::Hex(0x0A0C0Fu);
     t.colors.cardBg = Color::Hex(0x131619u);
-    t.colors.windowShadowSize = 34.0f;
+    t.metrics.windowShadowSize = 34.0f;
     t.InitVariants();
     return t;
 }

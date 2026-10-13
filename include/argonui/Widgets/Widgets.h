@@ -22,16 +22,16 @@ void EndSection(Context& ctx);
 /// Returns a std::function-free callback style: draw with the inner content
 /// rect available via ScrollAreaContent(). Returns true if it scrolled this
 /// frame (useful to swallow the wheel).
-bool BeginScrollArea(Context& ctx, const char* id, f32 height, bool* scrollY = nullptr,
+bool BeginScrollArea(Context& ctx, const char* id, f32 height, f32* scrollY = nullptr,
                      bool showScrollbar = true);
 Rect ScrollAreaContent();
 void EndScrollArea(Context& ctx);
 
 /// Underlined tab bar, matching the "Visuals | Enemy | Local | World" strip.
-/// Returns the new active index. `animatedOut` receives the animated underline
-/// rect so the caller can render it.
+/// Returns the new active index. `animatedIndicator` receives the animated
+/// underline rect so the caller can render it.
 int TabBar(Context& ctx, const char* id, const char* const* tabs, int count, int* active,
-           Rect* animatedIndicator = nullptr, Icon* tabIcons = nullptr);
+           Rect* animatedIndicator = nullptr, const Icon* tabIcons = nullptr);
 
 /// Icon rail sidebar. Returns the new selected index.
 int Sidebar(Context& ctx, const char* id, const Icon* icons, int count, int* selected,
@@ -64,11 +64,6 @@ struct ListItem {
 };
 int List(Context& ctx, const char* id, const ListItem* items, int count, int* selected,
          f32 rowHeight = 0.0f);
-
-/// Label + control row helper. Declared in Controls.h; re-exported for
-/// convenience so one include is enough for most menus.
-bool Row(Context& ctx, const char* label, const RowOptions& options,
-         bool (*drawControl)(Context&, const Rect&, void* userData), void* userData = nullptr);
 
 /// Simple key/value row with no interactive control.
 void InfoRow(Context& ctx, const char* label, const char* value, Color dotColor = Color(0, 0, 0, 0),

@@ -141,6 +141,32 @@ if(ARGONUI_BUILD_DEMO AND WIN32)
 endif()
 
 # ---------------------------------------------------------------------------
+# Tests
+#
+# Headless: the core library against the null backend, no GPU and no window.
+# The reference menu from examples/demo is driven for several frames, so this
+# covers layout, widget state, batching and font baking without touching a
+# graphics API.
+# ---------------------------------------------------------------------------
+set(ARGONUI_BUILD_TESTS ON CACHE BOOL "Build the headless tests")
+if(ARGONUI_BUILD_TESTS)
+    enable_testing()
+    add_executable(argonui_tests
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/headless_tests.cpp)
+    target_link_libraries(argonui_tests PRIVATE argonui_core)
+    target_include_directories(argonui_tests PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/examples/demo)
+    if(WIN32)
+        target_link_libraries(argonui_tests PRIVATE user32 gdi32)
+    endif()
+    # DemoMenu.cpp is the reference layout; the tests drive it directly so a
+    # regression in the shipped example fails the test run too.
+    target_sources(argonui_tests PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/examples/demo/DemoMenu.cpp)
+    add_test(NAME headless COMMAND argonui_tests)
+endif()
+
+# ---------------------------------------------------------------------------
 # Install
 # ---------------------------------------------------------------------------
 include(GNUInstallDirs)
@@ -161,4 +187,5 @@ message(STATUS "  D3D12 ............ ${ARGONUI_BUILD_D3D12}")
 message(STATUS "  Vulkan ........... ${ARGONUI_BUILD_VULKAN}")
 message(STATUS "  OpenGL ........... ${ARGONUI_BUILD_OPENGL}")
 message(STATUS "  demo ............. ${ARGONUI_BUILD_DEMO}")
+message(STATUS "  tests ............ ${ARGONUI_BUILD_TESTS}")
 message(STATUS "")

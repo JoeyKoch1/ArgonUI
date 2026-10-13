@@ -63,7 +63,9 @@ bool LoadLocked(std::string* err) {
         return false;
     }
 
-    std::memset(&g_api, 0, sizeof(g_api));
+    // Assigned rather than memset: Api has default member initialisers, so
+    // clearing its bytes would skip them.
+    g_api = gl::Api{};
     // Point the identification fields at our own storage immediately, so a
     // half-finished table still hands out empty strings rather than null.
     g_api.version = g_version;
@@ -92,6 +94,7 @@ bool LoadLocked(std::string* err) {
 
     ARGON_GL_LOAD(GenTextures, "glGenTextures");
     ARGON_GL_LOAD(BindTexture, "glBindTexture");
+ARGON_GL_LOAD(ActiveTexture, "glActiveTexture");
     ARGON_GL_LOAD(TexImage2D, "glTexImage2D");
     ARGON_GL_LOAD(TexSubImage2D, "glTexSubImage2D");
     ARGON_GL_LOAD(TexParameteri, "glTexParameteri");

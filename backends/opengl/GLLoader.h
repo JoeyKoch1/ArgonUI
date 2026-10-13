@@ -81,6 +81,42 @@
 #ifndef GL_SAMPLES
 #define GL_SAMPLES 0x80A9
 #endif
+#ifndef GL_STREAM_DRAW
+#define GL_STREAM_DRAW 0x88E0
+#endif
+#ifndef GL_STATIC_DRAW
+#define GL_STATIC_DRAW 0x88E4
+#endif
+#ifndef GL_DYNAMIC_DRAW
+#define GL_DYNAMIC_DRAW 0x88E8
+#endif
+#ifndef GL_ARRAY_BUFFER
+#define GL_ARRAY_BUFFER 0x8892
+#endif
+#ifndef GL_ELEMENT_ARRAY_BUFFER
+#define GL_ELEMENT_ARRAY_BUFFER 0x8893
+#endif
+#ifndef GL_FRAMEBUFFER_UNDEFINED
+#define GL_FRAMEBUFFER_UNDEFINED 0x8219
+#endif
+#ifndef GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT
+#define GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT 0x8CD6
+#endif
+#ifndef GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
+#define GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT 0x8CD7
+#endif
+#ifndef GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER
+#define GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER 0x8CDB
+#endif
+#ifndef GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER
+#define GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER 0x8CDC
+#endif
+#ifndef GL_FRAMEBUFFER_UNSUPPORTED
+#define GL_FRAMEBUFFER_UNSUPPORTED 0x8CDD
+#endif
+#ifndef GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE
+#define GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE 0x8D56
+#endif
 #ifndef GL_FRAMEBUFFER
 #define GL_FRAMEBUFFER 0x8D40
 #endif
@@ -152,7 +188,7 @@ using GLchar = ::GLchar;
 // APIENTRY on every one of these, including the 1.1 set: opengl32.dll exports
 // them __stdcall, and leaving it off would corrupt the stack under x86.
 
-using PfnGetString = const GLubyte* (APIENTRY*)();
+using PfnGetString = const GLubyte* (APIENTRY*)(GLenum);
 using PfnGetIntegerv = void (APIENTRY*)(GLenum, GLint*);
 using PfnGetError = GLenum (APIENTRY*)();
 
@@ -167,8 +203,9 @@ using PfnReadPixels = void (APIENTRY*)(GLint, GLint, GLsizei, GLsizei, GLenum, G
 
 using PfnGenTextures = void (APIENTRY*)(GLsizei, GLuint*);
 using PfnBindTexture = void (APIENTRY*)(GLenum, GLuint);
+using PfnActiveTexture = void (APIENTRY*)(GLenum);
 using PfnTexImage2D = void (APIENTRY*)(GLenum, GLint, GLint, GLsizei, GLsizei, GLint, GLenum, GLenum, const void*);
-using PfnTexSubImage2D = void (APIENTRY*)(GLenum, GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, const void*);
+using PfnTexSubImage2D = void (APIENTRY*)(GLenum, GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, const void*);
 using PfnTexParameteri = void (APIENTRY*)(GLenum, GLenum, GLint);
 using PfnDeleteTextures = void (APIENTRY*)(GLsizei, const GLuint*);
 
@@ -253,6 +290,7 @@ struct Api {
     // -- Textures (GL 1.1) -------------------------------------------------
     PfnGenTextures GenTextures;
     PfnBindTexture BindTexture;
+PfnActiveTexture ActiveTexture;
     PfnTexImage2D TexImage2D;
     PfnTexSubImage2D TexSubImage2D;
     PfnTexParameteri TexParameteri;

@@ -196,8 +196,8 @@ public:
     int VarDepth() const { return static_cast<int>(varStack_.size()); }
     void ClearStack();
 
-    const Theme& Theme() const { return theme_; }
-    Theme& MutableTheme() { return theme_; }
+    const Theme& GetTheme() const { return theme_; }
+    Theme& GetThemeMutable() { return theme_; }
 
     f32 Alpha() const { return GetVar(StyleVarId::Alpha); }
 

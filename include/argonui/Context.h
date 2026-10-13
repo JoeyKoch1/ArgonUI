@@ -41,6 +41,19 @@ enum class ItemFlags : u32 {
     KeepsActive = 1u << 3,
 };
 
+/// Scoped enums get no operators for free, and widgets combine flags constantly
+/// (`NoClip | AllowOverlap`). `Has` reads better than a bitmask test at the call
+/// site.
+constexpr ItemFlags operator|(ItemFlags a, ItemFlags b) {
+    return static_cast<ItemFlags>(static_cast<u32>(a) | static_cast<u32>(b));
+}
+constexpr ItemFlags operator&(ItemFlags a, ItemFlags b) {
+    return static_cast<ItemFlags>(static_cast<u32>(a) & static_cast<u32>(b));
+}
+constexpr bool Has(ItemFlags set, ItemFlags bit) {
+    return (static_cast<u32>(set) & static_cast<u32>(bit)) == static_cast<u32>(bit);
+}
+
 /// Outcome of registering an item's bounds with the immediate-mode system.
 struct ItemResult {
     Rect bounds;
@@ -140,7 +153,7 @@ public:
     bool IsAnyMouseClicked() const;
     bool IsMouseDragging() const { return dragDistance_ > dragThreshold_; }
     bool IsMouseDragging(MouseButton b) const {
-        return activeMouseButton_ == b && IsMouseDragging();
+        return activeMouseButton_ == static_cast<u32>(b) && IsMouseDragging();
     }
     f32 MouseDragThreshold() const { return dragThreshold_; }
 
@@ -281,7 +294,7 @@ public:
     // -- Style -------------------------------------------------------------
     Style& GetStyle() { return style_; }
     const Style& GetStyle() const { return style_; }
-    const Theme& GetTheme() const { return style_.Theme(); }
+    const Theme& GetTheme() const { return style_.GetTheme(); }
     void SetTheme(const Theme& theme);
     /// Installs a preset: "dark", "light", "midnight".
     void SetThemePreset(const char* name);
@@ -290,8 +303,8 @@ public:
     void PushStyleVar(StyleVarId id, f32 v);
     void PopStyleColor(int count = 1);
     void PopStyleVar(int count = 1);
-    Color Color(StyleColorId id) const { return style_.GetColor(id); }
-    f32 Var(StyleVarId id) const { return style_.GetVar(id); }
+    Color GetColor(StyleColorId id) const { return style_.GetColor(id); }
+    f32 GetVar(StyleVarId id) const { return style_.GetVar(id); }
     f32 Alpha() const { return style_.Alpha(); }
 
     // -- Text --------------------------------------------------------------
@@ -366,6 +379,10 @@ private:
         f32 itemSpacingX;
         f32 itemSpacingY;
     };
+
+private:
+    /// Builds a fresh layout entry. Lives here because LayoutEntry is private.
+    static LayoutEntry MakeLayoutEntry(const Rect& content, f32 spacingX, f32 spacingY);
 
     void ComputeEdgeStates();
     void UpdateDurations(f32 dt);

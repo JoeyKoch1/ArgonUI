@@ -34,14 +34,14 @@
 
 #include <windows.h>
 
-#include <directx/d3d12.h>
+#include <d3d12.h>
 #include <dxgi1_6.h>
-#include <wrl/client.h>
 
 #include <string>
 #include <unordered_map>
 #include <vector>
 
+#include "../common/ComPtr.h"
 #include "argonui/Backend/Backend.h"
 
 namespace argon::ui {
@@ -91,12 +91,22 @@ private:
     /// hold. The heap is created once; SRV descriptors are written into slots.
     static constexpr UINT kMaxSrvDescriptors = 4096;
 
+    /// Slot reserved for the 1x1 transparent texture that freed descriptors
+    /// get repointed at, so they never reference a destroyed resource.
+    static constexpr u32 kDeadSrvHandle = kMaxSrvDescriptors;
+
+    // D3D12 fixes descriptor sizes in the specification, so there is no need
+    // to ask the driver: CBV/SRV/UAV/sampler are 256 bytes, RTV/DSV 32.
+    static constexpr UINT kDescriptorStride = 256;
+    static constexpr UINT kRtvDescriptorStride = 32;
+
     static constexpr UINT64 kInitialVertexBufferBytes = 2ull * 1024ull * 1024ull;
     static constexpr UINT64 kInitialIndexBufferBytes = 1536ull * 1024ull;
 
     /// gViewport is one float4, but D3D12 constant buffer offsets and sizes are
     /// quantised to 256 bytes, so the resource is exactly one CBV slot.
     static constexpr UINT kViewportBufferBytes = 256;
+static constexpr UINT kSamplerBufferBytes = 256;  // one D3D12_SAMPLER_DESC, CBV-aligned
 
     struct TextureRecord {
         ComPtr<ID3D12Resource> texture;
@@ -119,6 +129,7 @@ private:
     bool CreateRootSignature();
     bool CreateStaticDescriptorHeaps();
     bool CreateViewportConstantBuffer();
+bool CreateSamplerConstantBuffer();
     bool CreateFrameRing();
     bool CreateGeometryBuffers();
     bool CreateStaticResources();
@@ -143,6 +154,12 @@ private:
                             ID3D12Resource* barrierResource,
                             D3D12_RESOURCE_STATE from, D3D12_RESOURCE_STATE to);
     D3D12_CPU_DESCRIPTOR_HANDLE SrvHandle(u32 handle) const;
+    /// Root descriptor tables take the GPU handle for the same descriptor.
+    D3D12_GPU_DESCRIPTOR_HANDLE SrvGpuHandle(u32 handle) const;
+    /// Maps a texture handle to its descriptor slot. Handles and slots are not
+    /// the same number: slot 0 is always the built-in white 1x1 and slot 1 is the
+    /// reserved dead texture.
+    UINT ClaimSrvSlot(u32 handle);
 
     // -- Frame -------------------------------------------------------------
     bool WaitForPendingFrames();
@@ -192,6 +209,10 @@ private:
     ComPtr<ID3D12DescriptorHeap> srvHeap_;
     ComPtr<ID3D12DescriptorHeap> rootDescriptorHeap_;   ///< one CBV: gViewport
     D3D12_CPU_DESCRIPTOR_HANDLE srvHeapStart_{};
+    D3D12_GPU_DESCRIPTOR_HANDLE srvHeapGpuStart_{};
+    std::unordered_map<u32, UINT> srvSlot_;
+    UINT nextSrvSlot_ = 0;
+    ComPtr<ID3D12Resource> deadTexture_;  ///< 1x1 transparent, at kDeadSrvHandle
     D3D12_CPU_DESCRIPTOR_HANDLE rtvHeapStart_{};
     UINT srvIncrement_ = 0;
 
@@ -199,6 +220,10 @@ private:
     ComPtr<ID3D12Resource> viewportBuffer_;
     D3D12_GPU_VIRTUAL_ADDRESS viewportGpuAddress_ = 0;
     void* viewportMapped_ = nullptr;
+
+    ComPtr<ID3D12Resource> samplerBuffer_;
+    D3D12_GPU_VIRTUAL_ADDRESS samplerGpuAddress_ = 0;
+    void* samplerMapped_ = nullptr;
 
     ComPtr<ID3D12Resource> vertexBuffer_;
     ComPtr<ID3D12Resource> vertexUpload_;
