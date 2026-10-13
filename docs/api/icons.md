@@ -167,9 +167,9 @@ const ItemResult r = ctx.ItemBehavior(id, bounds);
 
 // Tint at draw time, so the glyph animates with the hover state of the item
 // instead of carrying a color of its own.
-const f32 hover = detail::HoverAnim(ctx, id, r.hovered, ctx.Var(StyleVarId::HoverRate));
-const Color tint = Color::LerpC(ctx.Color(StyleColorId::TextDim),
-                                ctx.Color(StyleColorId::Accent), hover);
+const f32 hover = detail::HoverAnim(ctx, id, r.hovered, ctx.GetVar(StyleVarId::HoverRate));
+const Color tint = Color::LerpC(ctx.GetColor(StyleColorId::TextDim),
+                                ctx.GetColor(StyleColorId::Accent), hover);
 
 DrawIcon(Icon::Sparkle, IconBox(bounds.GetCenter(), 20.0f), 1.7f, tint);
 ctx.ItemSize(bounds.Size());

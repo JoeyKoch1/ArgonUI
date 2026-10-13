@@ -273,25 +273,25 @@ using namespace argon::ui;
 
 bool GlowButton(Context& ctx, const char* label, Color accent, bool* enabled) {
     const u32 id = ctx.GetID(label);
-    const f32 h = ctx.Var(StyleVarId::ButtonHeight);
-    Font* font = ctx.FontAt(ctx.Var(StyleVarId::TextSize));
+    const f32 h = ctx.GetVar(StyleVarId::ButtonHeight);
+    Font* font = ctx.FontAt(ctx.GetVar(StyleVarId::TextSize));
     const f32 w = font->MeasureLine(label, std::strlen(label)) +
-                  ctx.Var(StyleVarId::ButtonPaddingX) * 2.0f;
+                  ctx.GetVar(StyleVarId::ButtonPaddingX) * 2.0f;
 
     const Rect bounds(ctx.CursorPos(), ctx.CursorPos() + Vec2(w, h));
     const ItemResult r = ctx.ItemBehavior(id, bounds);
 
-    const f32 hover = detail::HoverAnim(ctx, id, r.hovered, ctx.Var(StyleVarId::HoverRate));
-    const f32 press = detail::PressAnim(ctx, id, r.held, ctx.Var(StyleVarId::PressRate));
+    const f32 hover = detail::HoverAnim(ctx, id, r.hovered, ctx.GetVar(StyleVarId::HoverRate));
+    const f32 press = detail::PressAnim(ctx, id, r.held, ctx.GetVar(StyleVarId::PressRate));
 
     const Color bg = Color::LerpC(Color::LerpC(accent, accent.WithAlpha(0.85f), hover),
                                   accent.WithAlpha(0.65f), press);
-    ctx.AddBox(bounds, bg, CornerRadius(ctx.Var(StyleVarId::ButtonRadius)), 0.0f,
-               Color(0, 0, 0, 0), press * 4.0f, ctx.Color(StyleColorId::Glow));
+    ctx.AddBox(bounds, bg, CornerRadius(ctx.GetVar(StyleVarId::ButtonRadius)), 0.0f,
+               Color(0, 0, 0, 0), press * 4.0f, ctx.GetColor(StyleColorId::Glow));
 
     const Color fg = enabled != nullptr && !*enabled
-                         ? detail::FadeColor(ctx.Color(StyleColorId::OnAccent), false)
-                         : ctx.Color(StyleColorId::OnAccent);
+                         ? detail::FadeColor(ctx.GetColor(StyleColorId::OnAccent), false)
+                         : ctx.GetColor(StyleColorId::OnAccent);
     ctx.AddTextCentered(bounds, label, fg, font);
 
     ctx.ItemSize(bounds.Size());

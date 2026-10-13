@@ -58,8 +58,8 @@ while (running) {
     if (argon::ui::BeginWindow(ctx, "main", "Settings", {900, 600})) {
         bool open = true;
         argon::ui::BeginSection(ctx, "Visuals", &open);
-            argon::ui::RowToggle(ctx, "ESP", &esp);
-            argon::ui::RowSlider(ctx, "FOV", &fov, 60.0f, 130.0f, "%.0f");
+            argon::ui::RowToggle("ESP", &esp);
+            argon::ui::RowSlider("FOV", &fov, 60.0f, 130.0f, "%.0f");
         argon::ui::EndSection(ctx);
         argon::ui::Button("Save", argon::ui::ButtonKind::Primary);
     }
@@ -72,7 +72,12 @@ while (running) {
 
 ## Status
 
-The library has not been compiled yet. It was written on a machine with no C++
-toolchain available, so the first build is the first real test. Expect ordinary
-first-build fixes rather than design surprises, and see
-[Status](README.md#status) for the known limitations.
+It builds, links and runs. Verified on Windows 11 with GCC 16 (MSYS2 UCRT64),
+`-Wall -Wextra`, zero warnings, plus a headless suite of 26 checks covering the
+backend contract, the vertex contract, batching, every tab, button interaction
+and font baking. Run it with `ctest --test-dir build -C Release`.
+
+Two things the build does not cover. The D3D12 backend needs the real Windows
+SDK: MinGW-w64's `d3d12.h` predates the descriptor heap type split, so it cannot
+compile a modern D3D12 backend. And nobody has yet compared a rendered frame
+against the reference. See [Status](README.md#status) for the known limitations.

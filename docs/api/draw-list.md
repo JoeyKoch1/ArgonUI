@@ -350,9 +350,9 @@ your own hit-testing and layout padding have to add it themselves.
 **Example**
 
 ```cpp
-dl.AddBox(card, ctx.Color(StyleColorId::CardBg),
+dl.AddBox(card, ctx.GetColor(StyleColorId::CardBg),
           CornerRadius(8.0f),
-          1.0f, ctx.Color(StyleColorId::CardBorder));
+          1.0f, ctx.GetColor(StyleColorId::CardBorder));
 ```
 
 ### `DrawList::AddBoxRotated`
@@ -674,8 +674,8 @@ const Rect clip = ctx.ClipRect();
 // ... emit any number of rows ...
 // End
 ctx.MutableDrawList().InsertBackgroundBox(
-    card, CornerRadius(radius), ctx.Color(StyleColorId::CardBg),
-    1.0f, ctx.Color(StyleColorId::CardBorder), 0.0f, Color(0, 0, 0, 0),
+    card, CornerRadius(radius), ctx.GetColor(StyleColorId::CardBg),
+    1.0f, ctx.GetColor(StyleColorId::CardBorder), 0.0f, Color(0, 0, 0, 0),
     checkpoint, clip);
 ```
 

@@ -90,14 +90,19 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int) {
         fs.time       += dt;
         fs.dpiScale    = windowDpiScale(hwnd);
 
+        // Hand the input over before NewFrame. The Context keeps its own copy
+        // and reads that, so filling `io` without this leaves the menu with no
+        // pointer, no keys and no clicks.
+        ctx.SetInput(io);
+
         ctx.NewFrame(fs);
         ctx.BeginLayout(argon::ui::Rect(0, 0, clientW, clientH));
 
         if (argon::ui::BeginWindow(ctx, "main", "Hello", {720, 480})) {
             bool open = true;
             argon::ui::BeginSection(ctx, "Settings", &open);
-                argon::ui::RowToggle(ctx, "Enabled", &enabled);
-                argon::ui::RowSlider(ctx, "Volume", &volume, 0.0f, 1.0f, "%.2f");
+                argon::ui::RowToggle("Enabled", &enabled);
+                argon::ui::RowSlider("Volume", &volume, 0.0f, 1.0f, "%.2f");
             argon::ui::EndSection(ctx);
 
             argon::ui::Button("Click me", argon::ui::ButtonKind::Primary);

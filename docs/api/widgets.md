@@ -66,8 +66,8 @@ const Vec2 size(Min(1080.0f, display.x - 60.0f), Min(680.0f, display.y - 60.0f))
 
 if (BeginWindow(ctx, "argon.main", "Argon Crystal", size, &state.windowOpen, Icon::Sparkle)) {
     BeginSection(ctx, "Player", &state.playerOpen, nullptr, Icon::User);
-        RowToggle(ctx, "Enabled", &state.espEnabled);
-        RowSlider(ctx, "FOV", &state.fov, 60.0f, 130.0f, "%.0f");
+        RowToggle("Enabled", &state.espEnabled);
+        RowSlider("FOV", &state.fov, 60.0f, 130.0f, "%.0f");
     EndSection(ctx);
 
     ctx.Spacing();
@@ -152,9 +152,9 @@ using namespace argon::ui;
 bool open = true;
 
 BeginSection(ctx, "Renders", &open, "Draw settings", Icon::Cube);
-    RowSlider(ctx, "FOV", &state.fov, 60.0f, 130.0f, "%.0f");
-    RowSlider(ctx, "Box thickness", &state.boxThickness, 0.5f, 5.0f, "%.1f");
-    RowToggle(ctx, "Smoothness", &state.smooth);
+    RowSlider("FOV", &state.fov, 60.0f, 130.0f, "%.0f");
+    RowSlider("Box thickness", &state.boxThickness, 0.5f, 5.0f, "%.1f");
+    RowToggle("Smoothness", &state.smooth);
 EndSection(ctx);
 ```
 
@@ -621,7 +621,7 @@ if (BeginModal(ctx, "argon.modal", "Appearance", Vec2(560.0f, 360.0f), &state.mo
     SegmentedControl("modal.effect", kEffects, 4, &state.effect);
     ctx.Spacing();
 
-    RowToggle(ctx, "Animate", &state.animate);
+    RowToggle("Animate", &state.animate);
     EndModal(ctx);
 }
 ```

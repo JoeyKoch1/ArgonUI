@@ -41,7 +41,7 @@ Drag a window between monitors with different density and the scale changes.
 float dpi = GetDpiForWindow(hwnd) / 96.0f;
 if (!NearlyEqual(dpi, lastDpi, 0.01f)) {
     lastDpi = dpi;
-    ctx.GetStyle().MutableTheme().metrics.windowPadding *= (dpi / lastDpi);
+    ctx.GetStyle().GetThemeMutable().metrics.windowPadding *= (dpi / lastDpi);
 }
 ```
 

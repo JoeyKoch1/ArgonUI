@@ -18,8 +18,8 @@ bool FancyToggle(const char* label, bool* value, bool enabled) {
     const u32 id = ctx.GetID(label);
     WidgetState& st = ctx.State(id);
 
-    const f32 h = ctx.Var(StyleVarId::ToggleHeight);
-    const f32 w = ctx.Var(StyleVarId::ToggleWidth);
+    const f32 h = ctx.GetVar(StyleVarId::ToggleHeight);
+    const f32 w = ctx.GetVar(StyleVarId::ToggleWidth);
     const Rect bounds(ctx.CursorPos(), ctx.CursorPos() + Vec2(w, h));
 
     const ItemResult r = ctx.ItemBehavior(
@@ -27,19 +27,19 @@ bool FancyToggle(const char* label, bool* value, bool enabled) {
 
     const bool on = (value != nullptr) && *value;
     const f32 anim = ctx.AnimFloat(id ^ 0x1234u, on ? 1.0f : 0.0f,
-                                   ctx.Var(StyleVarId::ToggleRate));
-    const f32 hover = detail::HoverAnim(ctx, id, r.hovered, ctx.Var(StyleVarId::HoverRate));
-    const f32 press = detail::PressAnim(ctx, id, r.held, ctx.Var(StyleVarId::PressRate));
+                                   ctx.GetVar(StyleVarId::ToggleRate));
+    const f32 hover = detail::HoverAnim(ctx, id, r.hovered, ctx.GetVar(StyleVarId::HoverRate));
+    const f32 press = detail::PressAnim(ctx, id, r.held, ctx.GetVar(StyleVarId::PressRate));
 
-    const Color track = Color::LerpC(ctx.Color(StyleColorId::Track),
-                                     ctx.Color(StyleColorId::Accent), anim);
+    const Color track = Color::LerpC(ctx.GetColor(StyleColorId::Track),
+                                     ctx.GetColor(StyleColorId::Accent), anim);
     ctx.AddBox(bounds, track, CornerRadius(h * 0.5f));
 
     const f32 knobR = h * 0.5f - 2.5f;
     const f32 travel = w - knobR * 2.0f - 5.0f;
     const Vec2 kc(bounds.min.x + 2.5f + knobR + travel * anim, bounds.GetCenter().y);
     ctx.AddBox(Rect(kc.x - knobR, kc.y - knobR, kc.x + knobR, kc.y + knobR),
-               ctx.Color(StyleColorId::Thumb), CornerRadius(knobR));
+               ctx.GetColor(StyleColorId::Thumb), CornerRadius(knobR));
 
     ctx.ItemSize(bounds.Size());
     ctx.NewLine();
@@ -62,8 +62,8 @@ Five steps, in this order:
 **Never hard-code a colour or a size.** Read them:
 
 ```cpp
-ctx.Color(StyleColorId::Accent)
-ctx.Var(StyleVarId::ButtonRadius)
+ctx.GetColor(StyleColorId::Accent)
+ctx.GetVar(StyleVarId::ButtonRadius)
 ```
 
 A widget that writes `Color(0.65f, 0.9f, 0.2f)` cannot be themed, and that is
@@ -72,8 +72,8 @@ the single most common way a custom widget breaks a theme.
 **Always use the shared animation helpers.**
 
 ```cpp
-detail::HoverAnim(ctx, id, r.hovered, ctx.Var(StyleVarId::HoverRate));
-detail::PressAnim(ctx, id, r.held,   ctx.Var(StyleVarId::PressRate));
+detail::HoverAnim(ctx, id, r.hovered, ctx.GetVar(StyleVarId::HoverRate));
+detail::PressAnim(ctx, id, r.held,   ctx.GetVar(StyleVarId::PressRate));
 detail::ExpandAnim(ctx, id, open);
 ```
 
@@ -153,8 +153,8 @@ void EndCard(Context& ctx, f32 height) {
     ctx.EndLayout();
     ctx.PopID();
     ctx.MutableDrawList().InsertBackgroundBox(
-        card, CornerRadius(12.0f), ctx.Color(StyleColorId::CardBg), 1.0f,
-        ctx.Color(StyleColorId::CardBorder), 0.0f, Color(0, 0, 0, 0),
+        card, CornerRadius(12.0f), ctx.GetColor(StyleColorId::CardBg), 1.0f,
+        ctx.GetColor(StyleColorId::CardBorder), 0.0f, Color(0, 0, 0, 0),
         checkpoint, clipAtCheckpoint);
 }
 ```
@@ -164,7 +164,7 @@ See [Immediate mode state](../concepts/state.md) for the mechanism.
 ## Picking an icon
 
 ```cpp
-DrawIcon(Icon::Crosshair, rect, 1.7f, ctx.Color(StyleColorId::Accent));
+DrawIcon(Icon::Crosshair, rect, 1.7f, ctx.GetColor(StyleColorId::Accent));
 ```
 
 Thickness in pixels, colour from the style, so it follows hover like anything

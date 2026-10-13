@@ -1455,7 +1455,7 @@ The two stacks are independent: pushing five colours and popping one var does
 not disturb the colours.
 
 ```cpp
-ctx.PushStyleColor(StyleColorId::Text, ctx.Color(StyleColorId::Danger));
+ctx.PushStyleColor(StyleColorId::Text, ctx.GetColor(StyleColorId::Danger));
 ctx.PushStyleVar(StyleVarId::Alpha, ctx.Alpha() * 0.5f);
 DrawSomething(ctx);
 ctx.PopStyleVar();
@@ -1513,8 +1513,8 @@ Atlases are created lazily, so the first call at a new size pays for the bake.
 the same size, not a scaled copy of it.
 
 ```cpp
-Font* title = ctx.SemiboldFontAt(ctx.Var(StyleVarId::TextSizeTitle));
-Font* mono  = ctx.MonoFontAt(ctx.Var(StyleVarId::TextSizeSmall));
+Font* title = ctx.SemiboldFontAt(ctx.GetVar(StyleVarId::TextSizeTitle));
+Font* mono  = ctx.MonoFontAt(ctx.GetVar(StyleVarId::TextSizeSmall));
 ```
 
 ### `Context::CurrentFont` and `Context::SetCurrentFont`

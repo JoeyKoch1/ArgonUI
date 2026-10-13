@@ -165,7 +165,7 @@ stroked at the larger of 1.2 pixels and 5.5 percent of the button height.
 ```cpp
 using namespace argon::ui;
 
-f32 h = ctx.Var(StyleVarId::ButtonHeight);
+f32 h = ctx.GetVar(StyleVarId::ButtonHeight);
 
 bool save = ButtonWithIcon("Save", Icon::Save, ButtonKind::Primary, IconSlot::Left,
                            Vec2(112.0f, h));
@@ -249,7 +249,7 @@ bool DrawSwatch(Context& ctx, const Rect& r, void* ud) {
                    r.max.x, r.GetCenter().y + s * 0.5f);
     const ItemResult ir = ctx.ItemBehavior(ctx.GetID("swatch"), box);
     ctx.AddBox(box, *ref->c, CornerRadius(6.0f), 1.5f,
-               ctx.Color(StyleColorId::White).WithAlpha(0.35f));
+               ctx.GetColor(StyleColorId::White).WithAlpha(0.35f));
     if (ir.hovered) ctx.AddBox(box, Color(1, 1, 1, 0.10f), CornerRadius(6.0f));
     return ir.clicked;
 }

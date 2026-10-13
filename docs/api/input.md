@@ -38,6 +38,23 @@ for (u32 cp : typedThisFrame) ctx.Input().inputCodepoints.push_back(cp);
 ctx.NewFrame(frameState);   // edges are derived here, before any widget runs
 ```
 
+There is a second way in, and it is the one to reach for when your platform
+layer already assembles an `InputState` of its own:
+
+```cpp
+argon::ui::InputState inputState;      // your platform layer fills this
+inputState.mousePos = cursor;
+inputState.mouseDown[argon::ui::Mouse_Left] = leftDown;
+
+ctx.SetInput(inputState);               // copy it in
+ctx.NewFrame(frameState);
+```
+
+`SetInput` copies, it does not alias. Mutating your own `InputState` after
+`SetInput` has no effect on the frame; mutating `ctx.Input()` does. Pick one
+route per application and stay on it, because mixing the two is how a menu
+quietly ends up with no pointer at all.
+
 {% hint style="warning" %}
 The keyboard is the exception. `NewFrame` derives the mouse edges only. The
 keyboard edges, `keyPressed`, `keyReleased` and `keyRepeated`, are yours to

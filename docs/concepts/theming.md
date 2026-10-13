@@ -56,8 +56,8 @@ between the push and the pop.
 Two accessors:
 
 ```cpp
-Color c = ctx.Color(StyleColorId::Accent);
-f32   h = ctx.Var(StyleVarId::ButtonHeight);
+Color c = ctx.GetColor(StyleColorId::Accent);
+f32   h = ctx.GetVar(StyleVarId::ButtonHeight);
 ```
 
 ## Alpha
