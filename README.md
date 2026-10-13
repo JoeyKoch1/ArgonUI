@@ -106,8 +106,8 @@ front. `BeginSection`/`EndSection` do not take one.
 
 ```cpp
 BeginSection(ctx, "Player", &open, nullptr, Icon::User);
-    RowSwitch(ctx, "Enabled", &enabled);          // any number of rows
-    RowSlider (ctx, "FOV", &fov, 60.0f, 130.0f);
+    RowToggle("Enabled", &enabled);           // any number of rows
+    RowSlider("FOV", &fov, 60.0f, 130.0f);
 EndSection(ctx);
 ```
 
@@ -130,14 +130,21 @@ argon::ui::FrameState fs;
 fs.displaySize = { (float)clientWidth, (float)clientHeight };
 fs.deltaTime   = dt;
 
+// Fill an InputState from your platform layer and hand it over. The Context
+// reads its own copy, so skipping this leaves the menu with no pointer.
+argon::ui::InputState inputState;
+inputState.mousePos = mousePos;
+inputState.mouseDown[argon::ui::Mouse_Left] = leftButtonDown;
+ctx.SetInput(inputState);
+
 ctx.NewFrame(fs);
 ctx.BeginLayout(argon::ui::Rect(0, 0, clientWidth, clientHeight));
 
 if (argon::ui::BeginWindow(ctx, "main", "Settings", {900, 600})) {
     bool open = true;
     argon::ui::BeginSection(ctx, "Visuals", &open);
-        argon::ui::RowToggle(ctx, "ESP", &esp);
-        argon::ui::RowSlider(ctx, "FOV", &fov, 60.0f, 130.0f, "%.0f");
+        argon::ui::RowToggle("ESP", &esp);
+        argon::ui::RowSlider("FOV", &fov, 60.0f, 130.0f, "%.0f");
     argon::ui::EndSection(ctx);
     argon::ui::Button("Save", argon::ui::ButtonKind::Primary);
 }
@@ -207,8 +214,6 @@ near-black-with-a-lime-accent look of the reference is a data change
   render sharp rather than upscaled.
 * **Anti-aliasing.** Analytic, from `fwidth` on the SDF, correct at any scale.
   Leave MSAA off; it would double-filter.
-* **Overlays.** When the device is not yours, the D3D11 backend saves and
-  restores the full device context state so the host's next frame is untouched.
 
 ## License
 
@@ -218,9 +223,30 @@ MIT. See [LICENSE](LICENSE).
 
 ## Status
 
-This code has not been compiled or run. It was written on a machine with no C++
-toolchain available, so expect ordinary first-build fixes (missing includes, a
-typo or two) rather than design surprises.
+It builds, links and runs. `tests/headless_tests.cpp` drives the reference menu
+against the null backend for 26 checks covering the backend contract, the 64-byte
+vertex contract, batching, frame stability across every tab, button
+hover/press/click/latch behaviour and font baking:
+
+```
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release
+ctest --test-dir build -C Release
+```
+
+Verified on Windows 11 with GCC 16 (MSYS2 UCRT64), `-Wall -Wextra`, zero
+warnings. The D3D11, OpenGL, Vulkan and demo targets all compile; the demo runs
+and opens its window.
+
+Toolchain notes, if you are not on MSVC:
+
+* **D3D12 needs the Windows SDK.** MinGW-w64's `d3d12.h` is a pre-2017 snapshot:
+  it predates the descriptor heap type split and declares `CopyTextureRegion`
+  without its subresource indices. The backend is written against the real SDK
+  and will not compile against those headers.
+* **Vulkan needs the SDK headers** for the same reason CMake says it does.
+* WRL was dropped in favour of `backends/common/ComPtr.h`, because MinGW ships
+  `<wrl/client.h>` without the class.
 
 Deliberate limitations:
 
@@ -229,5 +255,13 @@ Deliberate limitations:
 * Text input covers caret movement, UTF-8 insertion, backspace, delete and
   click-to-position. There is no selection, copy/paste or undo.
 * `Arc` and the triangle primitives are real geometry, not SDF primitives.
+* The D3D12 sampler is fixed at pipeline creation, so `TextureDesc::filterLinear`
+  and `::repeat` are not honoured there. The D3D11 backend has the same
+  simplification with one shared sampler state.
 * The demo targets D3D11. The other backends run through the same demo via
   `ARGONUI_BACKEND`.
+
+None of the rendering has been inspected on hardware that presents to a real
+display: the core, widget and batcher behaviour is covered by the tests, and the
+GPU paths are compile-verified, but nobody has yet looked at a screenshot of a
+frame and compared it against the reference.
